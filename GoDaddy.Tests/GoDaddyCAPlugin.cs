@@ -32,6 +32,34 @@ public class GoDaddyCAPluginTests
         _logger = LogHandler.GetClassLogger<GoDaddyCAPluginTests>();
     }
 
+    [IntegrationTestingFact]
+    public void GoDaddyCAPlugin_Integration_SynchronizeCAFull_ReturnSuccess()
+    {
+        // Arrange
+        IntegrationTestingFact env = new();
+        GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.Config config = new GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.Config()
+        {
+            ApiKey = env.ApiKey,
+            ApiSecret = env.ApiSecret,
+            BaseUrl = env.BaseApiUrl,
+            ShopperId = env.ShopperId
+        };
+        IAnyCAPluginConfigProvider configProvider = new TestCaConfigProvider(config);
+
+        ICertificateDataReader certificateDataReader = new TestCertificateDataReader();
+
+        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin();
+        plugin.Initialize(configProvider, certificateDataReader);
+
+        BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
+
+        // Act
+        plugin.Synchronize(certificates, DateTime.Now, true, CancellationToken.None).Wait();
+
+        // Assert
+        Assert.True(certificates.Count > 0);
+    }
+
     [Fact]
     public void GoDaddyCAPlugin_SynchronizeCAFull_ReturnSuccess()
     {

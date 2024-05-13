@@ -15,11 +15,14 @@
 using System;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace GoDaddy.Client;
 
 public class EnrollmentStrategyFactory
 {
+    ILogger _logger = LogHandler.GetClassLogger<EnrollmentStrategyFactory>();
     private readonly IGoDaddyClient _client;
 
     public EnrollmentStrategyFactory(IGoDaddyClient client)
@@ -32,10 +35,13 @@ public class EnrollmentStrategyFactory
         switch (request.EnrollmentType)
         {
             case EnrollmentType.New:
+                _logger.LogTrace("Enrollment Strategy Factory - New Enrollment Strategy Selected");
                 return new NewEnrollmentStrategy(_client);
             case EnrollmentType.Reissue:
+                _logger.LogTrace("Enrollment Strategy Factory - Reissue Enrollment Strategy Selected");
                 return new ReissueEnrollmentStrategy(_client);
             case EnrollmentType.Renew:
+                _logger.LogTrace("Enrollment Strategy Factory - Renew Enrollment Strategy Selected");
                 return new RenewEnrollmentStrategy(_client);
             default:
                 throw new ArgumentException($"Invalid enrollment type: {request.EnrollmentType}");
@@ -45,6 +51,7 @@ public class EnrollmentStrategyFactory
 
 public class NewEnrollmentStrategy : IEnrollmentStrategy
 {
+    ILogger _logger = LogHandler.GetClassLogger<NewEnrollmentStrategy>();
     private IGoDaddyClient client;
 
     public NewEnrollmentStrategy(IGoDaddyClient client)
@@ -54,9 +61,12 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
 
     public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request)
     {
+        _logger.LogDebug("NewEnrollmentStrategy - Preparing GoDaddy Certificate Order");
+
         // Map the EnrollmentRequest to a CertificateOrderRestRequest
         CertificateOrderRestRequest enrollmentRestRequest = new CertificateOrderRestRequest
         {
+            Csr = request.CSR,
             CallbackUrl = "",
             CommonName = request.CommonName,
             Contact = new Contact
@@ -89,11 +99,14 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
             SlotSize = request.SlotSize,
             SubjectAlternativeNames = request.SubjectAlternativeNames,
         };
+
+        return await client.Enroll(enrollmentRestRequest);
     }
 }
 
 public class ReissueEnrollmentStrategy : IEnrollmentStrategy
 {
+    ILogger _logger = LogHandler.GetClassLogger<ReissueEnrollmentStrategy>();
     private IGoDaddyClient client;
 
     public ReissueEnrollmentStrategy(IGoDaddyClient client)
@@ -109,6 +122,7 @@ public class ReissueEnrollmentStrategy : IEnrollmentStrategy
 
 public class RenewEnrollmentStrategy : IEnrollmentStrategy
 {
+    ILogger _logger = LogHandler.GetClassLogger<RenewEnrollmentStrategy>();
     private IGoDaddyClient client;
 
     public RenewEnrollmentStrategy(IGoDaddyClient client)

@@ -241,10 +241,12 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         return numberOfCertificates;
     }
 
-    public async Task<string> EnrollCSR(EnrollmentType type, string csr)
+    public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request)
     {
+        _logger.LogDebug($"Enrolling CSR with common name {request.CommonName}");
 
-        return "";
+        string path = $"/v1/certificates";
+        return PostAsync<CertificateOrderRestRequest, EnrollmentResult>(path, request);
     }
 
     public async Task<TResponse> GetAsync<TResponse>(string endpoint, IDictionary<string, string> query = null)
@@ -342,25 +344,34 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
             return JsonConvert.DeserializeObject<TResponse>(response.Content);
         }
-        else
+
+        _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
+        if (response.Content == null)
         {
-            _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
-            if (response.Content != null)
+            throw new Exception("Response was not successful and no content was returned.");
+        }
+
+        Error errorResponse;
+        try
+        {
+            _logger.LogTrace("Serializing response content to error object");
+            errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
+        }
+        catch (JsonReaderException)
+        {
+            throw new Exception($"Failed to POST {endpoint}: {response.Content} (failed to serialize to error)");
+        }
+
+        string message = $"Failed to POST {endpoint}: {errorResponse.message} [{errorResponse.code}]";
+        if (errorResponse.fields != null && errorResponse.fields.Length > 0)
+        {
+            foreach (ErrorField field in errorResponse.fields)
             {
-                var errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
-                string message = $"Failed to POST to {endpoint}: {errorResponse.message} [{errorResponse.code}]";
-                foreach (ErrorField field in errorResponse.fields)
-                {
-                    message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
-                }
-                _logger.LogError(message);
-                throw new Exception(message);
-            }
-            else
-            {
-                throw new Exception("Response was not successful and no content was returned.");
+                message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
             }
         }
+        _logger.LogError(message);
+        throw new Exception(message);
     }
 
     private void UpdateRateLimits()

@@ -33,7 +33,7 @@ public class ClientTests
     }
 
     [IntegrationTestingFact]
-    public void GoDaddyClient_DownloadAllIssuedCerts_ReturnSuccess()
+    public void GoDaddyClient_Integration_DownloadAllIssuedCerts_ReturnSuccess()
     {
         // Arrange
         IntegrationTestingFact env = new();
@@ -53,7 +53,7 @@ public class ClientTests
     }
 
     [IntegrationTestingFact]
-    public void GoDaddyClient_GetCertificateDetails_ReturnSuccess()
+    public void GoDaddyClient_Integration_GetCertificateDetails_ReturnSuccess()
     {
         // Arrange
         IntegrationTestingFact env = new();

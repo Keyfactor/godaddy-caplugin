@@ -13,9 +13,12 @@
 // limitations under the License.
 
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
+using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 
 namespace GoDaddy.Tests;
@@ -121,5 +124,59 @@ public class FakeGoDaddyClient : IGoDaddyClient
             return Task.FromResult(certificate.Certificate);
 
         throw new Exception($"Certificate with ID {certificateId} not found");
+    }
+
+    public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request)
+    {
+        _logger.LogInformation("Enrolling certificate with Fake GoDaddy");
+        _logger.LogDebug("Serializing csr string to CertificateRequest object");
+        CertificateRequest csr = CertificateRequest.LoadSigningRequestPem(
+            request.Csr.AsSpan(),
+            HashAlgorithmName.SHA256,
+            CertificateRequestLoadOptions.Default,
+            RSASignaturePadding.Pkcs1
+        );
+
+        _logger.LogDebug("Generating self-signed CA certificate");
+        using var caKeyPair = RSA.Create(2048);
+        var caCertificate = GenerateSelfSignedCertificate(caKeyPair, "CN=Test CA");
+
+        var serialNumber = new byte[8];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(serialNumber);
+        }
+
+        _logger.LogDebug("Creating certificate from CSR");
+        X509Certificate2 cert = csr.Create(
+            caCertificate.SubjectName,
+            X509SignatureGenerator.CreateForRSA(caKeyPair, RSASignaturePadding.Pkcs1),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddYears(1),
+            serialNumber
+        );
+
+        _logger.LogDebug("Preparing EnrollmentResult object");
+        EnrollmentResult result = new EnrollmentResult
+        {
+            CARequestID = Guid.NewGuid().ToString(),
+            Status = (int)EndEntityStatus.GENERATED,
+            StatusMessage = "Certificate generated successfully",
+            Certificate = cert.ExportCertificatePem()
+        };
+
+        return Task.FromResult(result);
+    }
+
+    public static X509Certificate2 GenerateSelfSignedCertificate(RSA keyPair, string subjectName)
+    {
+        var request = new CertificateRequest(
+            new X500DistinguishedName(subjectName),
+            keyPair,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        );
+        var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
+        return cert;
     }
 }

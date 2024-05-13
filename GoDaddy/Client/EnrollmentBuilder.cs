@@ -130,7 +130,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                 continue;
             }
 
-            _logger.LogDebug($"Product parameter: {parameter} = {productInfo.ProductParameters[parameter]}");
+            _logger.LogDebug($"Adding product parameter: {parameter} = {productInfo.ProductParameters[parameter]}");
 
             var propertyInfo = typeof(EnrollmentRequest).GetProperty(parameter);
             if (propertyInfo != null && propertyInfo.PropertyType == typeof(string))
@@ -153,7 +153,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
 
         if (missingParameters.Count > 0)
         {
-            _logger.LogError($"Missing required enrollment parameters: {string.Join("\n  - ", missingParameters)}");
+            _logger.LogError($"Missing required enrollment parameters:\n{string.Join("\n  - ", missingParameters)}");
             throw new ArgumentException($"Missing required enrollment parameters: {string.Join("\n  - ", missingParameters)}");
         }
 

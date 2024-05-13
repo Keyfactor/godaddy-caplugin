@@ -35,5 +35,6 @@ public interface IGoDaddyClient
     Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId);
     Task<string> DownloadCertificatePem(string certificateId);
     Task<int> DownloadAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken);
+    Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request);
 }
 

@@ -98,15 +98,15 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
 
     public async Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
     {
-        _logger.LogDebug($"csr: {csr} subject: {subject} san: {san} requestFormat: {requestFormat} enrollmentType: {enrollmentType}");
-        foreach (var sanField in san)
-        {
-            _logger.LogDebug($"SAN: {sanField.Key} - {string.Join(", ", sanField.Value)}");
-        }
-        foreach (var productField in productInfo.ProductParameters)
-        {
-            _logger.LogDebug($"Product Field: {productField.Key} - {productField.Value}");
-        }
+        /* _logger.LogDebug($"csr: {csr} subject: {subject} san: {san} requestFormat: {requestFormat} enrollmentType: {enrollmentType}"); */
+        /* foreach (var sanField in san) */
+        /* { */
+        /*     _logger.LogDebug($"SAN: {sanField.Key} - {string.Join(", ", sanField.Value)}"); */
+        /* } */
+        /* foreach (var productField in productInfo.ProductParameters) */
+        /* { */
+        /*     _logger.LogDebug($"Product Field: {productField.Key} - {productField.Value}"); */
+        /* } */
 
         InternalValidate();
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(Client);

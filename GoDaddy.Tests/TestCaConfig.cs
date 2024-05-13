@@ -20,9 +20,9 @@ namespace GoDaddy.Tests;
 
 public class TestCaConfigProvider : IAnyCAPluginConfigProvider
 {
-    GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.Config Config { get; set; }
+    GoDaddyCAPluginConfig.Config Config { get; set; }
 
-    public TestCaConfigProvider(GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.Config config)
+    public TestCaConfigProvider(GoDaddyCAPluginConfig.Config config)
     {
         Config = config;
     }
@@ -33,10 +33,10 @@ public class TestCaConfigProvider : IAnyCAPluginConfigProvider
         {
             return new Dictionary<string, object>
             {
-                { GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.ConfigConstants.ApiKey, Config.ApiKey },
-                    { GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.ConfigConstants.ApiSecret, Config.ApiSecret },
-                    { GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.ConfigConstants.BaseUrl, Config.BaseUrl },
-                    { GoDaddyCAPluginBuilder<FakeGoDaddyClient.Builder>.ConfigConstants.ShopperId, Config.ShopperId }
+                { GoDaddyCAPluginConfig.ConfigConstants.ApiKey, Config.ApiKey },
+                    { GoDaddyCAPluginConfig.ConfigConstants.ApiSecret, Config.ApiSecret },
+                    { GoDaddyCAPluginConfig.ConfigConstants.BaseUrl, Config.BaseUrl },
+                    { GoDaddyCAPluginConfig.ConfigConstants.ShopperId, Config.ShopperId }
             };
         }
     }

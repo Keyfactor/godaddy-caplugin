@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
@@ -112,6 +111,27 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         this._shopperId = shopperId;
     }
 
+    public async Task Ping()
+    {
+        _logger.LogDebug("Validating GoDaddy API connection");
+
+        string path = $"/v1/shoppers/{_shopperId}";
+        IDictionary <string, string> query = new Dictionary<string, string> {
+            { "includes", "customerId" }
+        };
+
+        try
+        {
+            ShopperDetailsRestResponse shopper = await GetAsync<ShopperDetailsRestResponse>(path, query);
+            _logger.LogDebug($"Successfully connected to GoDaddy API with Shopper ID: {_shopperId}, Customer ID: {shopper.customerId}");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Failed to connect to GoDaddy API: {e.Message}");
+            throw;
+        }
+    }
+
     private string GetCustomerId() {
         if (string.IsNullOrEmpty(_shopperId)) {
             _logger.LogError("Shopper ID is required to get customer ID");
@@ -136,7 +156,25 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         return _customerId;
     }
 
-    public async Task<string> DownloadCertificate(string certificateId) {
+    public async Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId) {
+        _logger.LogDebug($"Downloading certificate with ID: {certificateId}");
+
+        string path = $"/v1/certificates/{certificateId}/download";
+        DownloadCertificateRestResponse certificate = await GetAsync<DownloadCertificateRestResponse>(path);
+
+        CertificateDetailsRestResponse details = await GetCertificateDetails(certificateId);
+
+        return new AnyCAPluginCertificate
+        {
+            CARequestID = details.certificateId,
+            Certificate = certificate.pems.certificate,
+            Status = GoDaddyCertificateStatusToCAStatus(details.status),
+            ProductID = details.productType,
+            RevocationDate = details.revokedAt
+        };
+    }
+    
+    public async Task<string> DownloadCertificatePem(string certificateId) {
         _logger.LogDebug($"Downloading certificate with ID: {certificateId}");
 
         string path = $"/v1/certificates/{certificateId}/download";
@@ -145,7 +183,19 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         return certificate.pems.certificate;
     }
 
-    public async Task<int> GetAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken)
+    public async Task<CertificateDetailsRestResponse> GetCertificateDetails(string certificateId)
+    {
+        _logger.LogDebug($"Getting certificate details for certificate ID: {certificateId}");
+
+        string path = $"/v1/certificates/{certificateId}";
+        CertificateDetailsRestResponse certificateDetails = await GetAsync<CertificateDetailsRestResponse>(path);
+
+        _logger.LogTrace($"Retrieved details for certificate with ID {certificateId} [status: {certificateDetails.status}, type: {certificateDetails.productType}]");
+
+        return certificateDetails;
+    }
+
+    public async Task<int> DownloadAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken)
     {
         _logger.LogDebug("Getting all issued certificates");
 
@@ -172,11 +222,11 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
             foreach (CertificateDetail certificateDetail in certificatesWithPagination.certificates)
             {
-                string endEntityCertificatePem = await DownloadCertificate(certificateDetail.certificateId);
+                string certificatePemString = await DownloadCertificatePem(certificateDetail.certificateId);
                 certificatesBuffer.Add(new AnyCAPluginCertificate()
                 {
                     CARequestID = certificateDetail.certificateId,
-                    Certificate = endEntityCertificatePem,
+                    Certificate = certificatePemString,
                     Status = GoDaddyCertificateStatusToCAStatus(certificateDetail.status),
                     ProductID = certificateDetail.type,
                     RevocationDate = certificateDetail.revokedAt
@@ -189,6 +239,12 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         while (!allPagesDownloaded);
 
         return numberOfCertificates;
+    }
+
+    public async Task<string> EnrollCSR(EnrollmentType type, string csr)
+    {
+
+        return "";
     }
 
     public async Task<TResponse> GetAsync<TResponse>(string endpoint, IDictionary<string, string> query = null)
@@ -221,12 +277,69 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         _logger.LogTrace($"Sending GET request to {endpoint}");
         var response = await _client.ExecuteAsync(request);
+        _logger.LogTrace($"Response content: {response.Content}");
 
         var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
         if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
         {
             _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
-            _logger.LogTrace($"Response content: {response.Content}");
+            return JsonConvert.DeserializeObject<TResponse>(response.Content);
+        }
+
+        _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
+        if (response.Content == null)
+        {
+            throw new Exception("Response was not successful and no content was returned.");
+        }
+
+        Error errorResponse;
+        try
+        {
+            _logger.LogTrace("Serializing response content to error object");
+            errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
+        }
+        catch (JsonReaderException)
+        {
+            throw new Exception($"Failed to GET {endpoint}: {response.Content} (failed to serialize to error)");
+        }
+
+        string message = $"Failed to GET {endpoint}: {errorResponse.message} [{errorResponse.code}]";
+        if (errorResponse.fields != null && errorResponse.fields.Length > 0)
+        {
+            foreach (ErrorField field in errorResponse.fields)
+            {
+                message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
+            }
+        }
+        _logger.LogError(message);
+        throw new Exception(message);
+    }
+    
+    public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, IDictionary<string, string> query = null)
+        where TRequest : class
+        where TResponse : class, new()
+    {
+        _logger.LogTrace($"Setting up POST request to {endpoint}");
+        var request = new RestRequest(endpoint, Method.Post).AddJsonBody(body);
+
+        if (query == null)
+        {
+            query = new Dictionary<string, string>();
+        }
+        foreach (var param in query)
+        {
+            request.AddQueryParameter(param.Key, param.Value);
+            _logger.LogTrace($"Adding query parameter: {param.Key}={param.Value}");
+        }
+
+        _logger.LogTrace($"Sending POST request to {endpoint}");
+        var response = await _client.ExecuteAsync(request);
+        _logger.LogTrace($"Response content: {response.Content}");
+
+        var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
+        if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
+        {
+            _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
             return JsonConvert.DeserializeObject<TResponse>(response.Content);
         }
         else
@@ -235,35 +348,13 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             if (response.Content != null)
             {
                 var errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
-                throw new ApiException("API Error occurred", errorResponse);
-            }
-            else
-            {
-                throw new Exception("Response was not successful and no content was returned.");
-            }
-        }
-    }
-    
-    public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest body)
-        where TRequest : class
-        where TResponse : class, new()
-    {
-        var request = new RestRequest(endpoint, Method.Post).AddJsonBody(body);
-        var response = await _client.ExecuteAsync(request);
-        var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
-
-        if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
-        {
-            // Handle successful response
-            return JsonConvert.DeserializeObject<TResponse>(response.Content);
-        }
-        else
-        {
-            // Handle error response
-            if (response.Content != null)
-            {
-                var errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
-                throw new ApiException("API Error occurred", errorResponse);
+                string message = $"Failed to POST to {endpoint}: {errorResponse.message} [{errorResponse.code}]";
+                foreach (ErrorField field in errorResponse.fields)
+                {
+                    message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
+                }
+                _logger.LogError(message);
+                throw new Exception(message);
             }
             else
             {

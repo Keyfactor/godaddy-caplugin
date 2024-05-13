@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using System.Collections.Concurrent;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
@@ -29,8 +28,12 @@ public interface IGoDaddyClientBuilder
     public IGoDaddyClient Build();
 }
 
-public interface IGoDaddyClient {
-    Task<string> DownloadCertificate(string certificateId);
-    Task<int> GetAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken);
+public interface IGoDaddyClient
+{
+    Task Ping();
+    Task<CertificateDetailsRestResponse> GetCertificateDetails(string certificateId);
+    Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId);
+    Task<string> DownloadCertificatePem(string certificateId);
+    Task<int> DownloadAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken);
 }
 

@@ -65,12 +65,17 @@ public class FakeGoDaddyClient : IGoDaddyClient
 
     public Dictionary<string, AnyCAPluginCertificate>? CertificatesIssuedByFakeGoDaddy { get; set; }
 
+    public Task Ping()
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<string> DownloadCertificate(string certificateId)
     {
         throw new NotImplementedException();
     }
 
-    public Task<int> GetAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken)
+    public Task<int> DownloadAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken)
     {
         _logger.LogDebug("Getting all issued certificates from Fake GoDaddy");
 
@@ -85,5 +90,36 @@ public class FakeGoDaddyClient : IGoDaddyClient
         }
 
         return Task.FromResult(CertificatesIssuedByFakeGoDaddy.Count);
+    }
+
+    public Task<CertificateDetailsRestResponse> GetCertificateDetails(string certificateId)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<AnyCAPluginCertificate> IGoDaddyClient.DownloadCertificate(string certificateId)
+    {
+        if (CertificatesIssuedByFakeGoDaddy == null)
+        {
+            throw new Exception("No certificates have been issued by Fake GoDaddy - no items set");
+        }
+
+        if (CertificatesIssuedByFakeGoDaddy.TryGetValue(certificateId, out AnyCAPluginCertificate certificate))
+            return Task.FromResult(certificate);
+
+        throw new Exception($"Certificate with ID {certificateId} not found");
+    }
+
+    public Task<string> DownloadCertificatePem(string certificateId)
+    {
+        if (CertificatesIssuedByFakeGoDaddy == null)
+        {
+            throw new Exception("No certificates have been issued by Fake GoDaddy - no items set");
+        }
+
+        if (CertificatesIssuedByFakeGoDaddy.TryGetValue(certificateId, out AnyCAPluginCertificate certificate))
+            return Task.FromResult(certificate.Certificate);
+
+        throw new Exception($"Certificate with ID {certificateId} not found");
     }
 }

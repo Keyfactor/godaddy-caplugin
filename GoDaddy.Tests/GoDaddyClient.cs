@@ -45,11 +45,30 @@ public class ClientTests
             .WithShopperId(env.ShopperId)
             .Build();
 
+        BlockingCollection<AnyCAPluginCertificate> certificates = new();
+
+        // Act
+        int numberOfDownloadedCerts = client.DownloadAllIssuedCertificates(certificates, CancellationToken.None).Result;
+        _logger.LogInformation($"Number of downloaded certificates: {numberOfDownloadedCerts}");
+    }
+
+    [IntegrationTestingFact]
+    public void GoDaddyClient_GetCertificateDetails_ReturnSuccess()
+    {
+        // Arrange
+        IntegrationTestingFact env = new();
+
+        IGoDaddyClient client = new GoDaddyClient.Builder()
+            .WithBaseUrl(env.BaseApiUrl)
+            .WithApiKey(env.ApiKey)
+            .WithApiSecret(env.ApiSecret)
+            .WithShopperId(env.ShopperId)
+            .Build();
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new();
 
         // Act
-        int numberOfDownloadedCerts = client.GetAllIssuedCertificates(certificates, CancellationToken.None).Result;
+        int numberOfDownloadedCerts = client.DownloadAllIssuedCertificates(certificates, CancellationToken.None).Result;
         _logger.LogInformation($"Number of downloaded certificates: {numberOfDownloadedCerts}");
     }
 

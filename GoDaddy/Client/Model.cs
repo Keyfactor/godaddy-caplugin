@@ -14,6 +14,7 @@
 
 using System;
 using System.Net;
+using System.Text.Json.Serialization;
 
 namespace GoDaddy.Client;
 
@@ -30,7 +31,7 @@ public record CertificateDetailsRestResponse(
     int period,
     string productType,
     int progress,
-    string revokedAt,
+    DateTime? revokedAt,
     string rootType,
     string serialNumber,
     string serialNumberHex,
@@ -70,27 +71,6 @@ public record ShopperDetailsRestResponse(
     string shopperId
 );
 
-// POST /v1/certificates
-
-public record CertificateOrderRestRequest(
-    string callbackUrl,
-    string commonName,
-    Contact contact,
-    string csr,
-    bool intelVPro,
-    Organization organization,
-    int period,
-    string productType,
-    string rootType,
-    string slotSize,
-    string[] subjectAlternativeNames
-);
-
-[ApiResponse(HttpStatusCode.Accepted)] // 202 Accepted
-public record CertificateOrderRestResponse(
-    string certificateId
-);
-
 // POST /v1/certificates/validate
 
 public record ValidateCertificateRestRequest(
@@ -109,6 +89,73 @@ public record ValidateCertificateRestRequest(
 
 [ApiResponse(HttpStatusCode.NoContent)] // 204 No Content
 public record ValidateCertificateRestResponse();
+
+// POST /v1/certificates
+
+public enum CertificateEnrollmentType
+{
+    DV_SSL, // Domain Validated Secure Sockets Layer SSL certificate validated using domain name only
+    DV_WILDCARD_SSL, // SSL certificate containing subdomains which is validated using domain name only
+    EV_SSL, // Extended Validation SSL certificate validated using organization information, domain name, business legal status, and other factors
+    OV_CS, // Code signing SSL certificate used by software developers to digitally sign apps. Validated using organization information
+    OV_DS, // Driver signing SSL certificate used by software developers to digitally sign secure code for Windows hardware drivers. Validated using organization information
+    OV_SSL, // SSL certificate validated using organization information and domain name
+    OV_WILDCARD_SSL, // SSL certificate containing subdomains which is validated using organization information and domain name
+    UCC_DV_SSL, // Unified Communication Certificate Multi domain SSL certificate validated using domain name only
+    UCC_EV_SSL, // Multi domain SSL certificate validated using organization information, domain name, business legal status, and other factors
+    UCC_OV_SSL // Multi domain SSL certificate validated using organization information and domain name
+}
+
+public enum RootCAType
+{
+    GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, STARFIELD_SHA_2
+}
+
+public enum SANSlotSize
+{
+    FIVE, TEN, FIFTEEN, TWENTY, THIRTY, FOURTY, FIFTY, ONE_HUNDRED
+}
+
+public record CertificateOrderRestRequest
+{
+    [JsonPropertyName("callbackUrl")]
+    public string CallbackUrl { get; init; }
+
+    [JsonPropertyName("commonName")]
+    public string CommonName { get; init; }
+
+    [JsonPropertyName("contact")]
+    public Contact Contact { get; init; }
+
+    [JsonPropertyName("csr")]
+    public string Csr { get; init; }
+
+    [JsonPropertyName("intelVPro")]
+    public bool IntelVPro { get; init; }
+
+    [JsonPropertyName("organization")]
+    public Organization Organization { get; init; }
+
+    [JsonPropertyName("period")]
+    public int Period { get; init; }
+
+    [JsonPropertyName("productType")]
+    public string ProductType { get; init; }
+
+    [JsonPropertyName("rootType")]
+    public string RootType { get; init; }
+
+    [JsonPropertyName("slotSize")]
+    public string SlotSize { get; init; }
+
+    [JsonPropertyName("subjectAlternativeNames")]
+    public string[] SubjectAlternativeNames { get; init; }
+};
+
+[ApiResponse(HttpStatusCode.Accepted)] // 202 Accepted
+public record CertificateOrderRestResponse(
+    string certificateId
+);
 
 // POST /v1/certificates/reissue
 
@@ -150,41 +197,89 @@ public record RevokeCertificateRestResponse();
 
 // Common
 
-public record Contact(
-    string email,
-    string jobTitle,
-    string nameFirst,
-    string nameLast,
-    string nameMiddle,
-    string phone,
-    string suffix
-);
+public record Contact
+{
+    [JsonPropertyName("email")]
+    public string Email { get; init; }
 
-public record Organization(
-    Address address,
-    string assumedName,
-    JurisdictionOfIncorporation jurisdictionOfIncorporation,
-    string name,
-    string phone,
-    string registrationAgent,
-    string registrationNumber
-);
+    [JsonPropertyName("jobTitle")]
+    public string JobTitle { get; init; }
 
-public record Address(
-    string address1,
-    string address2,
-    string city,
-    string country,
-    string postalCode,
-    string state
-);
+    [JsonPropertyName("nameFirst")]
+    public string NameFirst { get; init; }
 
-public record JurisdictionOfIncorporation(
-    string city,
-    string country,
-    string county,
-    string state
-);
+    [JsonPropertyName("nameLast")]
+    public string NameLast { get; init; }
+
+    [JsonPropertyName("nameMiddle")]
+    public string NameMiddle { get; init; }
+
+    [JsonPropertyName("phone")]
+    public string Phone { get; init; }
+
+    [JsonPropertyName("suffix")]
+    public string Suffix { get; init; }
+};
+
+public record Organization
+{
+    [JsonPropertyName("address")]
+    public Address Address { get; init; }
+
+    [JsonPropertyName("assumedName")]
+    public string AssumedName { get; init; }
+
+    [JsonPropertyName("jurisdictionOfIncorporation")]
+    public JurisdictionOfIncorporation JurisdictionOfIncorporation { get; init; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; init; }
+
+    [JsonPropertyName("phone")]
+    public string Phone { get; init; }
+
+    [JsonPropertyName("registrationAgent")]
+    public string RegistrationAgent { get; init; }
+
+    [JsonPropertyName("registrationNumber")]
+    public string RegistrationNumber { get; init; }
+};
+
+public record Address
+{
+    [JsonPropertyName("address1")]
+    public string Address1 { get; init; }
+
+    [JsonPropertyName("address2")]
+    public string Address2 { get; init; }
+
+    [JsonPropertyName("city")]
+    public string City { get; init; }
+
+    [JsonPropertyName("country")]
+    public string Country { get; init; }
+
+    [JsonPropertyName("postalCode")]
+    public string PostalCode { get; init; }
+
+    [JsonPropertyName("state")]
+    public string State { get; init; }
+};
+
+public record JurisdictionOfIncorporation
+{
+    [JsonPropertyName("city")]
+    public string City { get; init; }
+
+    [JsonPropertyName("country")]
+    public string Country { get; init; }
+
+    [JsonPropertyName("county")]
+    public string County { get; init; }
+
+    [JsonPropertyName("state")]
+    public string State { get; init; }
+};
 
 public record SubjectAlternativeNames(
     string status,
@@ -225,13 +320,15 @@ public record Pagination(
 
 // Errors
 
+#nullable enable
 public record Error(
     string code,
-    ErrorFields[] fields,
+    ErrorField[]? fields,
     string message
 );
+#nullable restore
 
-public record ErrorFields(
+public record ErrorField(
     string code,
     string message,
     string path

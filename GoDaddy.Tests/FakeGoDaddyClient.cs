@@ -68,6 +68,9 @@ public class FakeGoDaddyClient : IGoDaddyClient
 
     public Dictionary<string, AnyCAPluginCertificate>? CertificatesIssuedByFakeGoDaddy { get; set; }
 
+    public DateTime EnrollmentNotBefore = DateTime.UtcNow;
+    public DateTime EnrollmentNotAfter = DateTime.UtcNow.AddYears(1);
+
     public Task Ping()
     {
         return Task.CompletedTask;
@@ -107,8 +110,8 @@ public class FakeGoDaddyClient : IGoDaddyClient
             throw new Exception("No certificates have been issued by Fake GoDaddy - no items set");
         }
 
-        if (CertificatesIssuedByFakeGoDaddy.TryGetValue(certificateId, out AnyCAPluginCertificate certificate))
-            return Task.FromResult(certificate);
+        if (CertificatesIssuedByFakeGoDaddy.ContainsKey(certificateId))
+            return Task.FromResult(CertificatesIssuedByFakeGoDaddy[certificateId]);
 
         throw new Exception($"Certificate with ID {certificateId} not found");
     }
@@ -120,18 +123,68 @@ public class FakeGoDaddyClient : IGoDaddyClient
             throw new Exception("No certificates have been issued by Fake GoDaddy - no items set");
         }
 
-        if (CertificatesIssuedByFakeGoDaddy.TryGetValue(certificateId, out AnyCAPluginCertificate certificate))
-            return Task.FromResult(certificate.Certificate);
+        if (CertificatesIssuedByFakeGoDaddy.ContainsKey(certificateId))
+            return Task.FromResult(CertificatesIssuedByFakeGoDaddy[certificateId].Certificate);
 
         throw new Exception($"Certificate with ID {certificateId} not found");
     }
 
-    public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request)
+    public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request, CancellationToken cancelToken)
     {
         _logger.LogInformation("Enrolling certificate with Fake GoDaddy");
+        X509Certificate2 cert = SignFakeCsr(request.Csr);
+
+        _logger.LogDebug("Preparing EnrollmentResult object");
+        EnrollmentResult result = new EnrollmentResult
+        {
+            CARequestID = Guid.NewGuid().ToString(),
+            Status = (int)EndEntityStatus.GENERATED,
+            StatusMessage = "Certificate generated successfully",
+            Certificate = cert.ExportCertificatePem()
+        };
+
+        return Task.FromResult(result);
+    }
+
+    public Task<EnrollmentResult> Renew(string certificateId, RenewCertificateRestRequest request, CancellationToken cancelToken)
+    {
+        _logger.LogInformation("Renewing certificate with Fake GoDaddy");
+        X509Certificate2 cert = SignFakeCsr(request.Csr);
+
+        _logger.LogDebug("Preparing EnrollmentResult object");
+        EnrollmentResult result = new EnrollmentResult
+        {
+            CARequestID = certificateId,
+            Status = (int)EndEntityStatus.GENERATED,
+            StatusMessage = "Certificate renewed successfully",
+            Certificate = cert.ExportCertificatePem()
+        };
+
+        return Task.FromResult(result);
+    }
+
+    public Task<EnrollmentResult> Reissue(string certificateId, ReissueCertificateRestRequest request, CancellationToken cancelToken)
+    {
+        _logger.LogInformation("Reissuing certificate with Fake GoDaddy");
+        X509Certificate2 cert = SignFakeCsr(request.Csr);
+
+        _logger.LogDebug("Preparing EnrollmentResult object");
+        EnrollmentResult result = new EnrollmentResult
+        {
+            CARequestID = certificateId,
+            Status = (int)EndEntityStatus.GENERATED,
+            StatusMessage = "Certificate reissued successfully",
+            Certificate = cert.ExportCertificatePem()
+        };
+
+        return Task.FromResult(result);
+    }
+
+    private X509Certificate2 SignFakeCsr(string csrString)
+    {
         _logger.LogDebug("Serializing csr string to CertificateRequest object");
         CertificateRequest csr = CertificateRequest.LoadSigningRequestPem(
-            request.Csr.AsSpan(),
+            csrString.AsSpan(),
             HashAlgorithmName.SHA256,
             CertificateRequestLoadOptions.Default,
             RSASignaturePadding.Pkcs1
@@ -151,21 +204,12 @@ public class FakeGoDaddyClient : IGoDaddyClient
         X509Certificate2 cert = csr.Create(
             caCertificate.SubjectName,
             X509SignatureGenerator.CreateForRSA(caKeyPair, RSASignaturePadding.Pkcs1),
-            DateTimeOffset.UtcNow,
-            DateTimeOffset.UtcNow.AddYears(1),
+            EnrollmentNotBefore,
+            EnrollmentNotAfter,
             serialNumber
         );
 
-        _logger.LogDebug("Preparing EnrollmentResult object");
-        EnrollmentResult result = new EnrollmentResult
-        {
-            CARequestID = Guid.NewGuid().ToString(),
-            Status = (int)EndEntityStatus.GENERATED,
-            StatusMessage = "Certificate generated successfully",
-            Certificate = cert.ExportCertificatePem()
-        };
-
-        return Task.FromResult(result);
+        return cert;
     }
 
     public static X509Certificate2 GenerateSelfSignedCertificate(RSA keyPair, string subjectName)
@@ -178,5 +222,15 @@ public class FakeGoDaddyClient : IGoDaddyClient
         );
         var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
         return cert;
+    }
+
+    public Task RevokeCertificate(string certificateId, RevokeReason reason)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task CancelCertificateOrder(string certificateId)
+    {
+        throw new NotImplementedException();
     }
 }

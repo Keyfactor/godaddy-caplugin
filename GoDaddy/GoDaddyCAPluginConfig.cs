@@ -25,6 +25,7 @@ public class GoDaddyCAPluginConfig
         public const string ApiSecret = "ApiSecret";
         public const string BaseUrl = "BaseUrl";
         public const string ShopperId = "ShopperId";
+        public const string Enabled = "Enabled";
     }
 
     public class Config
@@ -33,6 +34,7 @@ public class GoDaddyCAPluginConfig
         public string ApiSecret { get; set; }
         public string BaseUrl { get; set; }
         public string ShopperId { get; set; }
+        public bool Enabled { get; set; }
     }
 
     public static class EnrollmentConfigConstants
@@ -66,27 +68,34 @@ public class GoDaddyCAPluginConfig
                          DefaultValue = "",
                          Type = "String"
             },
-                [ConfigConstants.ApiSecret] = new PropertyConfigInfo()
-                {
-                    Comments = "The API Secret for the GoDaddy API",
-                    Hidden = true,
-                    DefaultValue = "",
-                    Type = "String"
-                },
-                [ConfigConstants.BaseUrl] = new PropertyConfigInfo()
-                {
-                    Comments = "The Base URL for the GoDaddy API - Usually either https://api.godaddy.com or https://api.ote-godaddy.com",
-                    Hidden = false,
-                    DefaultValue = "https://api.godaddy.com",
-                    Type = "String"
-                },
-                [ConfigConstants.ShopperId] = new PropertyConfigInfo()
-                {
-                    Comments = "The Shopper ID of the GoDaddy account to use for the API calls (ex: 1234567890) - has a max length of 10 digits",
-                    Hidden = false,
-                    DefaultValue = "",
-                    Type = "String"
-                }
+            [ConfigConstants.ApiSecret] = new PropertyConfigInfo()
+            {
+                Comments = "The API Secret for the GoDaddy API",
+                Hidden = true,
+                DefaultValue = "",
+                Type = "String"
+            },
+            [ConfigConstants.BaseUrl] = new PropertyConfigInfo()
+            {
+                Comments = "The Base URL for the GoDaddy API - Usually either https://api.godaddy.com or https://api.ote-godaddy.com",
+                Hidden = false,
+                DefaultValue = "https://api.godaddy.com",
+                Type = "String"
+            },
+            [ConfigConstants.ShopperId] = new PropertyConfigInfo()
+            {
+                Comments = "The Shopper ID of the GoDaddy account to use for the API calls (ex: 1234567890) - has a max length of 10 digits",
+                Hidden = false,
+                DefaultValue = "",
+                Type = "String"
+            },
+            [ConfigConstants.Enabled] = new PropertyConfigInfo()
+            {
+                Comments = "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available.",
+                Hidden = false,
+                DefaultValue = true,
+                Type = "Boolean"
+            }
         };
     }
 

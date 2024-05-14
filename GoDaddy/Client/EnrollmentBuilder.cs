@@ -157,6 +157,14 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
             throw new ArgumentException($"Missing required enrollment parameters: {string.Join("\n  - ", missingParameters)}");
         }
 
+        // Lastly, we try to retrieve PriorCertSN from ProductParameters. This field will be present if the
+        // EnrollmentType is RenewOrReissue, but we won't fail the builder step if it's not present since
+        // the absense of PriorCertSN is an AnyGateway REST error instead of a user-releated error.
+        if (productInfo.ProductParameters.ContainsKey("PriorCertSN"))
+        {
+            _theEnrollmentRequest.PriorCertSN = productInfo.ProductParameters["PriorCertSN"];
+        }
+
         return this;
     }
 

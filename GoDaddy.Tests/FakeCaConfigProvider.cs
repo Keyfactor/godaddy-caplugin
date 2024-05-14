@@ -18,11 +18,11 @@ using Keyfactor.AnyGateway.Extensions;
 
 namespace GoDaddy.Tests;
 
-public class TestCaConfigProvider : IAnyCAPluginConfigProvider
+public class FakeCaConfigProvider : IAnyCAPluginConfigProvider
 {
     GoDaddyCAPluginConfig.Config Config { get; set; }
 
-    public TestCaConfigProvider(GoDaddyCAPluginConfig.Config config)
+    public FakeCaConfigProvider(GoDaddyCAPluginConfig.Config config)
     {
         Config = config;
     }
@@ -34,9 +34,9 @@ public class TestCaConfigProvider : IAnyCAPluginConfigProvider
             return new Dictionary<string, object>
             {
                 { GoDaddyCAPluginConfig.ConfigConstants.ApiKey, Config.ApiKey },
-                    { GoDaddyCAPluginConfig.ConfigConstants.ApiSecret, Config.ApiSecret },
-                    { GoDaddyCAPluginConfig.ConfigConstants.BaseUrl, Config.BaseUrl },
-                    { GoDaddyCAPluginConfig.ConfigConstants.ShopperId, Config.ShopperId }
+                { GoDaddyCAPluginConfig.ConfigConstants.ApiSecret, Config.ApiSecret },
+                { GoDaddyCAPluginConfig.ConfigConstants.BaseUrl, Config.BaseUrl },
+                { GoDaddyCAPluginConfig.ConfigConstants.ShopperId, Config.ShopperId }
             };
         }
     }
@@ -59,29 +59,3 @@ public class TestCaConfigProvider : IAnyCAPluginConfigProvider
     }
 }
 
-public class TestCertificateDataReader : ICertificateDataReader
-{
-    public TestCertificateDataReader()
-    {
-    }
-
-    public Task<bool> DoesCertExistForRequestID(string caRequestID)
-    {
-        throw new NotImplementedException();
-    }
-
-    public DateTime? GetExpirationDateByRequestId(string caRequestID)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<string> GetRequestIDBySerialNumber(string serialNumber)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> GetStatusByRequestID(string caRequestID)
-    {
-        throw new NotImplementedException();
-    }
-}

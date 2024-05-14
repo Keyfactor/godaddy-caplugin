@@ -25,7 +25,7 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
 {
     public TBuilder _builder = new TBuilder();
     private ILogger _logger = LogHandler.GetClassLogger<GoDaddyCAPluginBuilder<TBuilder>>();
-
+    private bool _enabled = false;
 
     public GoDaddyCAPluginBuilder<TBuilder> WithConfigProvider(IAnyCAPluginConfigProvider configProvider)
     {
@@ -38,12 +38,15 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
         _logger.LogTrace($"Builder - ApiSecret: {properties.ApiSecret}");
         _logger.LogTrace($"Builder - BaseUrl: {properties.BaseUrl}");
         _logger.LogTrace($"Builder - ShopperId: {properties.ShopperId}");
+        _logger.LogTrace($"Builder - Enabled: {properties.Enabled}");
 
         _builder
             .WithApiKey(properties.ApiKey)
             .WithApiSecret(properties.ApiSecret)
             .WithBaseUrl(properties.BaseUrl)
             .WithShopperId(properties.ShopperId);
+        
+        _enabled = properties.Enabled;
 
         return this;
     }
@@ -59,12 +62,15 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
         _logger.LogTrace($"Builder - ApiSecret: {properties.ApiSecret}");
         _logger.LogTrace($"Builder - BaseUrl: {properties.BaseUrl}");
         _logger.LogTrace($"Builder - ShopperId: {properties.ShopperId}");
+        _logger.LogTrace($"Builder - Enabled: {properties.Enabled}");
 
         _builder
             .WithApiKey(properties.ApiKey)
             .WithApiSecret(properties.ApiSecret)
             .WithBaseUrl(properties.BaseUrl)
             .WithShopperId(properties.ShopperId);
+
+        _enabled = properties.Enabled;
 
         return this;
     }
@@ -73,6 +79,11 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
     {
         _logger = logger;
         return this;
+    }
+
+    public bool IsGoDaddyPluginEnabled()
+    {
+        return _enabled;
     }
 
     public IGoDaddyClient Build()

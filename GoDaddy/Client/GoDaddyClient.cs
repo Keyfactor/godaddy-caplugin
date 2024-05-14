@@ -60,6 +60,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public class Builder : IGoDaddyClientBuilder
     {
+        private bool _enabled { get; set; }
         private string _baseUrl { get; set; }
         private string _apiKey { get; set; }
         private string _apiSecret { get; set; }
@@ -241,12 +242,165 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         return numberOfCertificates;
     }
 
-    public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request)
+    public async Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request, CancellationToken cancelToken)
     {
         _logger.LogDebug($"Enrolling CSR with common name {request.CommonName}");
 
         string path = $"/v1/certificates";
-        return PostAsync<CertificateOrderRestRequest, EnrollmentResult>(path, request);
+        CertificateOrderRestResponse certificateOrder = await PostAsync<CertificateOrderRestRequest, CertificateOrderRestResponse>(path, request);
+
+        _logger.LogDebug($"Created Certificate order with ID {certificateOrder.certificateId} - Waiting for certificate to be issued");
+
+        const int delay = 1000;
+        CertificateDetailsRestResponse details;
+        do
+        {
+            details = await GetCertificateDetails(certificateOrder.certificateId);
+            if ((int)EndEntityStatus.GENERATED == GoDaddyCertificateStatusToCAStatus(details.status))
+            {
+                _logger.LogDebug($"Certificate with ID {certificateOrder.certificateId} has been issued");
+                break;
+            }
+
+            if (cancelToken.IsCancellationRequested)
+            {
+                _logger.LogDebug($"Cancellation requested - cancelling certificate with ID {certificateOrder.certificateId}");
+                await CancelCertificateOrder(certificateOrder.certificateId);
+                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
+            }
+
+            await Task.Delay(delay);
+        }
+        while (true);
+
+        // Sanity check
+        if (details == null)
+        {
+            throw new Exception("Failed to get certificate details");
+        }
+
+        string certificatePemString = await DownloadCertificatePem(certificateOrder.certificateId);
+        return new EnrollmentResult
+        {
+            CARequestID = certificateOrder.certificateId,
+            Certificate = certificatePemString,
+            Status = GoDaddyCertificateStatusToCAStatus(details.status),
+            StatusMessage = $"Certificate with ID {certificateOrder.certificateId} has been issued"
+        };
+    }
+
+    public async Task<EnrollmentResult> Reissue(string certificateId, ReissueCertificateRestRequest request, CancellationToken cancelToken)
+    {
+        _logger.LogDebug($"Reissuing certificate with ID {certificateId}");
+
+        string path = $"/v1/certificates/{certificateId}/reissue";
+        ReissueCertificateRestResponse certificateOrder = await PostAsync<ReissueCertificateRestRequest, ReissueCertificateRestResponse>(path, request);
+
+        _logger.LogDebug($"Successfully submitted request to reissue certificate with ID {certificateId} - Waiting for certificate to be issued");
+
+        const int delay = 1000;
+        CertificateDetailsRestResponse details;
+        do
+        {
+            details = await GetCertificateDetails(certificateId);
+            if ((int)EndEntityStatus.GENERATED == GoDaddyCertificateStatusToCAStatus(details.status))
+            {
+                _logger.LogDebug($"Certificate with ID {certificateId} has been reissued");
+                break;
+            }
+
+            if (cancelToken.IsCancellationRequested)
+            {
+                _logger.LogDebug($"Cancellation requested - cancelling reissue request for certificate with ID {certificateId}");
+                await CancelCertificateOrder(certificateId);
+                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
+            }
+
+            await Task.Delay(delay);
+        }
+        while (true);
+
+        // Sanity check
+        if (details == null)
+        {
+            throw new Exception("Failed to get certificate details");
+        }
+
+        string certificatePemString = await DownloadCertificatePem(certificateId);
+        return new EnrollmentResult
+        {
+            CARequestID = certificateId,
+            Certificate = certificatePemString,
+            Status = GoDaddyCertificateStatusToCAStatus(details.status),
+            StatusMessage = $"Certificate with ID {certificateId} has been reissued"
+        };
+    }
+
+    public async Task<EnrollmentResult> Renew(string certificateId, RenewCertificateRestRequest request, CancellationToken cancelToken)
+    {
+        _logger.LogDebug($"Renewing certificate with ID {certificateId}");
+
+        string path = $"v1/certificates/{certificateId}/renew";
+        RenewCertificateRestResponse certificateOrder = await PostAsync<RenewCertificateRestRequest, RenewCertificateRestResponse>(path, request);
+
+        _logger.LogDebug($"Successfully submitted request to renew certificate with ID {certificateId} - Waiting for certificate to be issued");
+
+        const int delay = 1000;
+        CertificateDetailsRestResponse details;
+        do
+        {
+            details = await GetCertificateDetails(certificateId);
+            if ((int)EndEntityStatus.GENERATED == GoDaddyCertificateStatusToCAStatus(details.status))
+            {
+                _logger.LogDebug($"Certificate with ID {certificateId} has been renewed");
+                break;
+            }
+
+            if (cancelToken.IsCancellationRequested)
+            {
+                _logger.LogDebug($"Cancellation requested - cancelling renewal request for certificate with ID {certificateId}");
+                await CancelCertificateOrder(certificateId);
+                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
+            }
+
+            await Task.Delay(delay);
+        }
+        while (true);
+
+        // Sanity check
+        if (details == null)
+        {
+            throw new Exception("Failed to get certificate details");
+        }
+
+        string certificatePemString = await DownloadCertificatePem(certificateId);
+        return new EnrollmentResult
+        {
+            CARequestID = certificateId,
+            Certificate = certificatePemString,
+            Status = GoDaddyCertificateStatusToCAStatus(details.status),
+            StatusMessage = $"Certificate with ID {certificateId} has been renewed"
+        };
+    }
+
+    public async Task RevokeCertificate(string certificateId, RevokeReason reason)
+    {
+        _logger.LogDebug($"Revoking certificate with ID {certificateId} [reason: {reason.ToString()}]");
+
+        RevokeCertificateRestRequest request = new RevokeCertificateRestRequest(reason.ToString());
+
+        string path = $"/v1/certificates/{certificateId}/revoke";
+        await PostAsync<RevokeCertificateRestRequest, RevokeCertificateRestResponse>(path, request);
+    }
+
+    public async Task CancelCertificateOrder(string certificateId)
+    {
+        _logger.LogDebug($"Cancelling certificate order with ID {certificateId}");
+
+        CancelCertificateOrderRestRequest request = new CancelCertificateOrderRestRequest();
+
+        string path = $"/v1/certificates/{certificateId}/cancel";
+        await PostAsync<CancelCertificateOrderRestRequest, CancelCertificateOrderRestResponse>(path, request);
     }
 
     public async Task<TResponse> GetAsync<TResponse>(string endpoint, IDictionary<string, string> query = null)
@@ -319,7 +473,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
     
     public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, IDictionary<string, string> query = null)
         where TRequest : class
-        where TResponse : class, new()
+        where TResponse : class
     {
         _logger.LogTrace($"Setting up POST request to {endpoint}");
         var request = new RestRequest(endpoint, Method.Post).AddJsonBody(body);
@@ -333,6 +487,18 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             request.AddQueryParameter(param.Key, param.Value);
             _logger.LogTrace($"Adding query parameter: {param.Key}={param.Value}");
         }
+
+        UpdateRateLimits();
+        if (_availableRequests < 1)
+        {
+            _logger.LogTrace("Rate limit exceeded - waiting for more requests to be available");
+            while (_availableRequests < 1)
+            {
+                await Task.Delay(100);
+                UpdateRateLimits();
+            }
+        }
+        _availableRequests--;
 
         _logger.LogTrace($"Sending POST request to {endpoint}");
         var response = await _client.ExecuteAsync(request);

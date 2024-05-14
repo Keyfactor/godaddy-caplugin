@@ -38,8 +38,8 @@ public record CertificateDetailsRestResponse(
     string slotSize,
     string status,
     SubjectAlternativeNames[] subjectAlternativeNames,
-    string validEnd,
-    string validStart
+    DateTime? validEnd,
+    DateTime? validStart
 );
 
 // GET /v1/certificates/{certificateId}/download
@@ -159,29 +159,55 @@ public record CertificateOrderRestResponse(
 
 // POST /v1/certificates/reissue
 
-public record ReissueCertificateRestRequest(
-    string callbackUrl,
-    string commonName,
-    string csr,
-    int delayExistingRevoke,
-    string rootType,
-    string[] subjectAlternativeNames,
-    string[] forceDomainRevetting
-);
+public record ReissueCertificateRestRequest
+{
+    [JsonPropertyName("callbackUrl")]
+    public string CallbackUrl { get; init; }
+
+    [JsonPropertyName("commonName")]
+    public string CommonName { get; init; }
+
+    [JsonPropertyName("csr")]
+    public string Csr { get; init; }
+
+    [JsonPropertyName("delayExistingRevoke")]
+    public int DelayExistingRevoke { get; init; }
+
+    [JsonPropertyName("rootType")]
+    public string RootType { get; init; }
+
+    [JsonPropertyName("subjectAlternativeNames")]
+    public string[] SubjectAlternativeNames { get; init; }
+
+    [JsonPropertyName("forceDomainRevetting")]
+    public string[] ForceDomainRevetting { get; init; }
+}
 
 [ApiResponse(HttpStatusCode.Accepted)] // 202 Accepted
 public record ReissueCertificateRestResponse();
 
 // POST /v1/certificates/renew
 
-public record RenewCertificateRestRequest(
-    string callbackUrl,
-    string commonName,
-    string csr,
-    int period,
-    string rootType,
-    string[] subjectAlternativeNames
-);
+public record RenewCertificateRestRequest
+{
+    [JsonPropertyName("callbackUrl")]
+    public string CallbackUrl { get; init; }
+
+    [JsonPropertyName("commonName")]
+    public string CommonName { get; init; }
+
+    [JsonPropertyName("csr")]
+    public string Csr { get; init; }
+
+    [JsonPropertyName("period")]
+    public int Period { get; init; }
+
+    [JsonPropertyName("rootType")]
+    public string RootType { get; init; }
+
+    [JsonPropertyName("subjectAlternativeNames")]
+    public string[] SubjectAlternativeNames { get; init; }
+}
 
 [ApiResponse(HttpStatusCode.Accepted)] // 202 Accepted
 public record RenewCertificateRestResponse();
@@ -192,8 +218,20 @@ public record RevokeCertificateRestRequest(
     string reason
 );
 
+public enum RevokeReason
+{
+    AFFILIATION_CHANGED, CESSATION_OF_OPERATION, KEY_COMPROMISE, PRIVILEGE_WITHDRAWN, SUPERSEDED
+}
+
 [ApiResponse(HttpStatusCode.NoContent)] // 204 No Content
 public record RevokeCertificateRestResponse();
+
+// POST /v1/certificates/{certificateId}/cancel
+
+public record CancelCertificateOrderRestRequest();
+
+[ApiResponse(HttpStatusCode.NoContent)] // 204 No Content
+public record CancelCertificateOrderRestResponse();
 
 // Common
 

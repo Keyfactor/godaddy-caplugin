@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
@@ -24,42 +25,104 @@ public class EnrollmentStrategyFactory
 {
     ILogger _logger = LogHandler.GetClassLogger<EnrollmentStrategyFactory>();
     private readonly IGoDaddyClient _client;
+    private readonly ICertificateDataReader _certificateDataReader;
 
-    public EnrollmentStrategyFactory(IGoDaddyClient client)
+    public EnrollmentStrategyFactory(ICertificateDataReader certificateDataReader, IGoDaddyClient client)
     {
         _client = client;
+        _certificateDataReader = certificateDataReader;
     }
 
-    public IEnrollmentStrategy GetStrategy(EnrollmentRequest request)
+    public async Task<IEnrollmentStrategy> GetStrategy(EnrollmentRequest request)
     {
+        // In 99.9% of cases, EnrollmentType will be New or RenewOrReissue. If RenewOrReissue is specified,
+        // we will use the EnrollmentRequest.PriorCertSN field to download the existing certificate and calculate
+        // if a Renew or Reissue should be performed. 
+
         switch (request.EnrollmentType)
         {
             case EnrollmentType.New:
                 _logger.LogTrace("Enrollment Strategy Factory - New Enrollment Strategy Selected");
                 return new NewEnrollmentStrategy(_client);
+
             case EnrollmentType.Reissue:
-                _logger.LogTrace("Enrollment Strategy Factory - Reissue Enrollment Strategy Selected");
-                return new ReissueEnrollmentStrategy(_client);
+                // Filter out Reissue requests - these should be handled by the RenewOrReissue strategy
+
             case EnrollmentType.Renew:
-                _logger.LogTrace("Enrollment Strategy Factory - Renew Enrollment Strategy Selected");
-                return new RenewEnrollmentStrategy(_client);
+                // Filter out Renew requests - these should be handled by the RenewOrReissue strategy
+
+            case EnrollmentType.RenewOrReissue:
+                _logger.LogTrace("Enrollment Strategy Factory - Determining if Renew or Reissue Strategy is needed");
+                return await RenewOrReissue(request);
+
             default:
-                throw new ArgumentException($"Invalid enrollment type: {request.EnrollmentType}");
+                throw new ArgumentException($"Unsupported enrollment type: {request.EnrollmentType}");
         }
+    }
+
+    private async Task<IEnrollmentStrategy> RenewOrReissue(EnrollmentRequest request)
+    {
+        if (string.IsNullOrEmpty(request.PriorCertSN))
+        {
+            throw new ArgumentException("EnrollmentType is RenewOrReissue, but no PriorCertSN was provided.");
+        }
+
+        _logger.LogDebug($"Attempting to retrieve the certificate with serial number {request.PriorCertSN} from AnyGateway REST database");
+        string certificateId = await _certificateDataReader.GetRequestIDBySerialNumber(request.PriorCertSN);
+        if (string.IsNullOrEmpty(certificateId))
+        {
+            throw new Exception($"No certificate with serial number '{request.PriorCertSN}' could be found.");
+        }
+
+        DateTime? expirationDate = _certificateDataReader.GetExpirationDateByRequestId(certificateId);
+        if (expirationDate == null)
+        {
+            _logger.LogDebug($"Couldn't retrieve expiration date for certificate with serial number {request.PriorCertSN} - getting certificate details from GoDaddy");
+            CertificateDetailsRestResponse details = await _client.GetCertificateDetails(certificateId);
+            if (details.validEnd == null)
+            {
+                throw new Exception($"Couldn't retrieve expiration date for certificate with serial number {request.PriorCertSN}");
+            }
+            expirationDate = details.validEnd;
+        }
+
+        // From GoDaddy - Renewal is the process by which the validity of a certificate is extended. Renewal 
+        // is only available 60 days prior to expiration of the previous certificate and 30 days after the 
+        // expiration of the previous certificate. The renewal supports modifying a set of the original certificate 
+        // order information. Once a request is validated and approved, the certificate will be issued with 
+        // extended validity.
+
+        DateTime earliestRenewalDate = expirationDate.Value.AddDays(-60);
+        DateTime latestRenewalDate = expirationDate.Value.AddDays(30);
+
+        if (DateTime.UtcNow < earliestRenewalDate)
+        {
+            _logger.LogDebug($"Certificate with serial number {request.PriorCertSN} is not yet eligible for renewal. Earliest renewal date is {earliestRenewalDate} - Reissuing instead.");
+            return new ReissueEnrollmentStrategy(_client, certificateId);
+        }
+
+        if (DateTime.UtcNow > latestRenewalDate)
+        {
+            _logger.LogError($"Certificate with serial number {request.PriorCertSN} is no longer eligible for renewal. Latest renewal date was {latestRenewalDate}");
+            throw new Exception($"Certificate with serial number {request.PriorCertSN} is no longer eligible for renewal. Latest renewal date was {latestRenewalDate}");
+        }
+
+        _logger.LogDebug($"Certificate with serial number {request.PriorCertSN} is eligible for renewal. Renewing certificate.");
+        return new RenewEnrollmentStrategy(_client, certificateId);
     }
 }
 
 public class NewEnrollmentStrategy : IEnrollmentStrategy
 {
     ILogger _logger = LogHandler.GetClassLogger<NewEnrollmentStrategy>();
-    private IGoDaddyClient client;
+    private IGoDaddyClient _client;
 
     public NewEnrollmentStrategy(IGoDaddyClient client)
     {
-        this.client = client;
+        _client = client;
     }
 
-    public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request)
+    public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken)
     {
         _logger.LogDebug("NewEnrollmentStrategy - Preparing GoDaddy Certificate Order");
 
@@ -100,38 +163,67 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
             SubjectAlternativeNames = request.SubjectAlternativeNames,
         };
 
-        return await client.Enroll(enrollmentRestRequest);
+        return await _client.Enroll(enrollmentRestRequest, cancelToken);
     }
 }
 
 public class ReissueEnrollmentStrategy : IEnrollmentStrategy
 {
     ILogger _logger = LogHandler.GetClassLogger<ReissueEnrollmentStrategy>();
-    private IGoDaddyClient client;
+    private IGoDaddyClient _client;
+    private string _certificateId;
 
-    public ReissueEnrollmentStrategy(IGoDaddyClient client)
+    public ReissueEnrollmentStrategy(IGoDaddyClient client, string certificateId)
     {
-        this.client = client;
+        _client = client;
+        _certificateId = certificateId;
     }
 
-    public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request)
+    public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken)
     {
-        throw new System.NotImplementedException();
+        _logger.LogDebug("ReissueEnrollmentStrategy - Preparing GoDaddy Certificate Reissue");
+
+        // Map the EnrollmentRequest to a ReissueCertificateRestRequest
+        ReissueCertificateRestRequest reissueRestRequest = new ReissueCertificateRestRequest
+        {
+            Csr = request.CSR,
+            CallbackUrl = "",
+            CommonName = request.CommonName,
+            RootType = request.RootCAType.ToString(),
+            SubjectAlternativeNames = request.SubjectAlternativeNames,
+        };
+
+        return await _client.Reissue(_certificateId, reissueRestRequest, cancelToken);
     }
 }
 
 public class RenewEnrollmentStrategy : IEnrollmentStrategy
 {
     ILogger _logger = LogHandler.GetClassLogger<RenewEnrollmentStrategy>();
-    private IGoDaddyClient client;
+    private IGoDaddyClient _client;
+    private string _certificateId;
 
-    public RenewEnrollmentStrategy(IGoDaddyClient client)
+    public RenewEnrollmentStrategy(IGoDaddyClient client, string certificateId)
     {
-        this.client = client;
+        _client = client;
+        _certificateId = certificateId;
     }
 
-    public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request)
+    public Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken)
     {
-        throw new System.NotImplementedException();
+        _logger.LogDebug("RenewEnrollmentStrategy - Preparing GoDaddy Certificate Renewal");
+
+        // Map the EnrollmentRequest to a RenewCertificateRestRequest
+        RenewCertificateRestRequest renewRestRequest = new RenewCertificateRestRequest
+        {
+            Csr = request.CSR,
+            CallbackUrl = "",
+            CommonName = request.CommonName,
+            Period = request.CertificateValidityInYears,
+            RootType = request.RootCAType.ToString(),
+            SubjectAlternativeNames = request.SubjectAlternativeNames,
+        };
+
+        return _client.Renew(_certificateId, renewRestRequest, cancelToken);
     }
 }

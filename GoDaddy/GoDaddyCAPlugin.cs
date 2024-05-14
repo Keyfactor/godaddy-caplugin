@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
+using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 
 namespace GoDaddy;
@@ -27,18 +28,28 @@ namespace GoDaddy;
 public class GoDaddyCAPlugin : IAnyCAPlugin
 {
     public IGoDaddyClient Client { get; set; }
+    bool _enabled;
     ILogger _logger = LogHandler.GetClassLogger<GoDaddyCAPlugin>();
+    ICertificateDataReader _certificateDataReader;
 
     public void Initialize(IAnyCAPluginConfigProvider configProvider, ICertificateDataReader certificateDataReader)
     {
         if (Client == null)
         {
-            Client = new GoDaddyCAPluginBuilder<GoDaddyClient.Builder>()
+            GoDaddyCAPluginBuilder<GoDaddyClient.Builder> builder = new();
+            Client = builder
                 .WithConfigProvider(configProvider)
                 .Build();
 
+            _enabled = builder.IsGoDaddyPluginEnabled();
             _logger.LogDebug("Created GoDaddy API Client");
         }
+        else
+        {
+            _enabled = true;
+        }
+
+        _certificateDataReader = certificateDataReader;
 
         _logger.LogDebug("GoDaddyCAPlugin initialized");
     }
@@ -47,33 +58,38 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
     {
         if (Client == null)
         {
-            Client = new GoDaddyCAPluginBuilder<GoDaddyClient.Builder>()
+            GoDaddyCAPluginBuilder<GoDaddyClient.Builder> builder = new();
+            Client = builder
                 .WithConnectionInformation(connectionInfo)
                 .Build();
 
+            _enabled = builder.IsGoDaddyPluginEnabled();
             _logger.LogDebug("Created GoDaddy API Client");
+        }
+        else
+        {
+            _enabled = true;
         }
 
         await Ping();
     }
 
-    public async Task ValidateProductInfo(EnrollmentProductInfo productInfo, Dictionary<string, object> connectionInfo)
+    public Task ValidateProductInfo(EnrollmentProductInfo productInfo, Dictionary<string, object> connectionInfo)
     {
-        if (Client == null)
-        {
-            Client = new GoDaddyCAPluginBuilder<GoDaddyClient.Builder>()
-                .WithConnectionInformation(connectionInfo)
-                .Build();
-
-            _logger.LogDebug("Created GoDaddy API Client");
-        }
-
-        await Ping();
+        // WithEnrollmentProductInfo() validates that the custom parameters in EnrollmentProductInfo are valid
+        new EnrollmentRequestBuilder().WithEnrollmentProductInfo(productInfo);
+        // If this method doesn't throw, the product info is valid
+        return Task.CompletedTask;
     }
 
     public async Task Ping()
     {
-        InternalValidate();
+        if (!_enabled)
+        {
+            _logger.LogDebug("GoDaddyCAPlugin is disabled. Skipping Ping");
+            return;
+        }
+        ValidateClient();
         _logger.LogDebug("Pinging GoDaddy API to validate connection");
         await Client.Ping();
     }
@@ -98,18 +114,12 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
 
     public async Task<EnrollmentResult> Enroll(string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, RequestFormat requestFormat, EnrollmentType enrollmentType)
     {
-        /* _logger.LogDebug($"csr: {csr} subject: {subject} san: {san} requestFormat: {requestFormat} enrollmentType: {enrollmentType}"); */
-        /* foreach (var sanField in san) */
-        /* { */
-        /*     _logger.LogDebug($"SAN: {sanField.Key} - {string.Join(", ", sanField.Value)}"); */
-        /* } */
-        /* foreach (var productField in productInfo.ProductParameters) */
-        /* { */
-        /*     _logger.LogDebug($"Product Field: {productField.Key} - {productField.Value}"); */
-        /* } */
+        ValidateClient();
 
-        InternalValidate();
-        EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(Client);
+        if (_certificateDataReader == null)
+        {
+            throw new Exception("CertificateDataReader is not initialized. Please call Initialize() first.");
+        }
 
         EnrollmentRequest request = new EnrollmentRequestBuilder()
             .WithCsr(csr)
@@ -120,25 +130,73 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
             .WithEnrollmentType(enrollmentType)
             .Build();
 
-        IEnrollmentStrategy strategy = factory.GetStrategy(request);
-        return await strategy.ExecuteAsync(request);
+        EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(_certificateDataReader, Client);
+        IEnrollmentStrategy strategy = await factory.GetStrategy(request);
+        return await strategy.ExecuteAsync(request, CancellationToken.None);
     }
 
     public async Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)
     {
-        InternalValidate();
+        ValidateClient();
         _logger.LogDebug($"Getting certificate with request ID: {caRequestID}");
         return await Client.DownloadCertificate(caRequestID);
     }
 
     public async Task<int> Revoke(string caRequestID, string hexSerialNumber, uint revocationReason)
     {
-        throw new NotImplementedException();
+        ValidateClient();
+        _logger.LogDebug($"Revoking certificate with request ID: {caRequestID}");
+        RevokeReason reason = RevokeReason.CESSATION_OF_OPERATION;
+        switch (revocationReason)
+        {
+            case 1:
+                // Key Compromise
+                reason = RevokeReason.KEY_COMPROMISE;
+                break;
+
+            case 2:
+                // CA Compromise
+                reason = RevokeReason.KEY_COMPROMISE;
+                break;
+
+            case 3:
+                // Affiliation Changed
+                reason = RevokeReason.AFFILIATION_CHANGED;
+                break;
+
+            case 4:
+                // Superseded
+                reason = RevokeReason.SUPERSEDED;
+                break;
+
+            case 5:
+                // Cessation of Operation
+                reason = RevokeReason.CESSATION_OF_OPERATION;
+                break;
+
+            case 6:
+                // Certificate Hold
+                reason = RevokeReason.PRIVILEGE_WITHDRAWN;
+                break;
+
+            case 8:
+                // Remove from CRL
+                reason = RevokeReason.PRIVILEGE_WITHDRAWN;
+                break;
+
+            default:
+                reason = RevokeReason.CESSATION_OF_OPERATION;
+                break;
+        }
+
+        await Client.RevokeCertificate(caRequestID, reason);
+
+        return (int)EndEntityStatus.REVOKED;
     }
 
     public async Task Synchronize(BlockingCollection<AnyCAPluginCertificate> blockingBuffer, DateTime? lastSync, bool fullSync, CancellationToken cancelToken)
     {
-        InternalValidate();
+        ValidateClient();
         
         if (fullSync)
         {
@@ -148,7 +206,7 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
         }
     }
 
-    private void InternalValidate()
+    private void ValidateClient()
     {
         if (Client == null)
         {

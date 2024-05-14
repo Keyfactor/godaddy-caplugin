@@ -35,6 +35,10 @@ public interface IGoDaddyClient
     Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId);
     Task<string> DownloadCertificatePem(string certificateId);
     Task<int> DownloadAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken);
-    Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request);
+    Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request, CancellationToken cancelToken);
+    Task<EnrollmentResult> Renew(string certificateId, RenewCertificateRestRequest request, CancellationToken cancelToken);
+    Task<EnrollmentResult> Reissue(string certificateId, ReissueCertificateRestRequest request, CancellationToken cancelToken);
+    Task RevokeCertificate(string certificateId, RevokeReason reason);
+    Task CancelCertificateOrder(string certificateId);
 }
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
 
@@ -47,6 +48,9 @@ public class EnrollmentRequest
     public string JurisdictionState;
     public string JurisdictionCountry;
     public string RegistrationNumber;
+
+    // AnyGateway REST config
+    public string PriorCertSN;
 }
 
 public interface IEnrollmentRequestBuilder
@@ -62,5 +66,5 @@ public interface IEnrollmentRequestBuilder
 
 public interface IEnrollmentStrategy
 {
-    Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request);
+    Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken);
 }

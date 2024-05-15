@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
@@ -84,6 +85,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     EnrollmentConfigConstants.OrganizationCity,
                     EnrollmentConfigConstants.OrganizationState,
                     EnrollmentConfigConstants.OrganizationCountry,
+                    EnrollmentConfigConstants.OrganizationPhone,
 
                     EnrollmentConfigConstants.CertificateValidityInYears,
                     EnrollmentConfigConstants.SlotSize,
@@ -105,11 +107,13 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     EnrollmentConfigConstants.OrganizationCity,
                     EnrollmentConfigConstants.OrganizationState,
                     EnrollmentConfigConstants.OrganizationCountry,
+                    EnrollmentConfigConstants.OrganizationPhone,
 
                     // Extended Validation
                     EnrollmentConfigConstants.JurisdictionState,
                     EnrollmentConfigConstants.JurisdictionCountry,
                     EnrollmentConfigConstants.RegistrationNumber,
+                    EnrollmentConfigConstants.JobTitle,
 
                     EnrollmentConfigConstants.CertificateValidityInYears,
                     EnrollmentConfigConstants.SlotSize,
@@ -132,22 +136,34 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
 
             _logger.LogDebug($"Adding product parameter: {parameter} = {productInfo.ProductParameters[parameter]}");
 
-            var propertyInfo = typeof(EnrollmentRequest).GetProperty(parameter);
-            if (propertyInfo != null && propertyInfo.PropertyType == typeof(string))
+            var fieldInfo = typeof(EnrollmentRequest).GetField(parameter, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (fieldInfo != null && fieldInfo.FieldType == typeof(string))
             {
-                propertyInfo.SetValue(_theEnrollmentRequest, productInfo.ProductParameters[parameter]);
+                _logger.LogTrace($"{fieldInfo.Name} is a string - setting value to {productInfo.ProductParameters[parameter]}");
+                fieldInfo.SetValue(_theEnrollmentRequest, productInfo.ProductParameters[parameter]);
             }
-            else if (propertyInfo != null && propertyInfo.PropertyType == typeof(int))
+            else if (fieldInfo != null && fieldInfo.FieldType == typeof(int))
             {
                 if (int.TryParse(productInfo.ProductParameters[parameter], out int intValue))
                 {
-                    propertyInfo.SetValue(_theEnrollmentRequest, intValue);
+                    _logger.LogTrace($"{fieldInfo.Name} is an integer - setting value to {intValue}");
+                    fieldInfo.SetValue(_theEnrollmentRequest, intValue);
                 }
                 else
                 {
                     _logger.LogError($"Unable to parse integer value for product parameter: {parameter}");
                     throw new ArgumentException($"Unable to parse integer value for product parameter: {parameter}");
                 }
+            }
+            else if (fieldInfo == null)
+            {
+                _logger.LogError($"Failed to find property for product parameter: {parameter}");
+                throw new ArgumentException($"Failed to find property for product parameter: {parameter}");
+            }
+            else
+            {
+                _logger.LogError($"Invalid property type for product parameter: {parameter}");
+                throw new ArgumentException($"Invalid property type for product parameter: {parameter}");
             }
         }
 

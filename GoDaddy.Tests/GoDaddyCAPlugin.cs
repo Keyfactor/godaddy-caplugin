@@ -102,6 +102,138 @@ public class GoDaddyCAPluginTests
         Assert.Equal(testRevokeDate, certificates.First().RevocationDate);
     }
 
+    [Fact]
+    public void GoDaddyCAPlugin_ValidateProductInfo_DV_InvalidParameters_ReturnFailure()
+    {
+        // Arrange
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
+        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin()
+        {
+            Client = fakeClient
+        };
+
+        EnrollmentProductInfo productInfo = new EnrollmentProductInfo
+        {
+            ProductID = "DV_SSL",
+            ProductParameters = new Dictionary<string, string>
+            {
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.FirstName, "John" },
+                { EnrollmentConfigConstants.Email, "john.doe@example.com" },
+                { EnrollmentConfigConstants.Phone, "123-456-7890" },
+                { EnrollmentConfigConstants.SlotSize, "1024" },
+                { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+            }
+        };
+
+        bool success = true;
+        // Act
+        try
+        {
+            plugin.ValidateProductInfo(productInfo, new Dictionary<string, object>()).Wait();
+        }
+        catch
+        {
+            success = false;
+        }
+
+        // Assert
+        Assert.False(success);
+    }
+
+    [Fact]
+    public void GoDaddyCAPlugin_ValidateProductInfo_OV_InvalidParameters_ReturnFailure()
+    {
+        // Arrange
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
+        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin()
+        {
+            Client = fakeClient
+        };
+
+        EnrollmentProductInfo productInfo = new EnrollmentProductInfo
+        {
+            ProductID = "OV_SSL",
+            ProductParameters = new Dictionary<string, string>
+            {
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.LastName, "Doe" },
+                { EnrollmentConfigConstants.FirstName, "John" },
+                { EnrollmentConfigConstants.Email, "john.doe@example.com" },
+                { EnrollmentConfigConstants.Phone, "123-456-7890" },
+                { EnrollmentConfigConstants.SlotSize, "1024" },
+                { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
+                { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
+                { EnrollmentConfigConstants.OrganizationCity, "Example City" },
+                { EnrollmentConfigConstants.OrganizationState, "EX" },
+                { EnrollmentConfigConstants.OrganizationCountry, "USA" },
+            }
+        };
+
+        bool success = true;
+        // Act
+        try
+        {
+            plugin.ValidateProductInfo(productInfo, new Dictionary<string, object>()).Wait();
+        }
+        catch
+        {
+            success = false;
+        }
+
+        // Assert
+        Assert.False(success);
+    }
+
+    [Fact]
+    public void GoDaddyCAPlugin_ValidateProductInfo_EV_InvalidParameters_ReturnFailure()
+    {
+        // Arrange
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
+        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin()
+        {
+            Client = fakeClient
+        };
+
+        EnrollmentProductInfo productInfo = new EnrollmentProductInfo
+        {
+            ProductID = "EV_SSL",
+            ProductParameters = new Dictionary<string, string>
+            {
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.LastName, "Doe" },
+                { EnrollmentConfigConstants.FirstName, "John" },
+                { EnrollmentConfigConstants.Email, "john.doe@example.com" },
+                { EnrollmentConfigConstants.Phone, "123-456-7890" },
+                { EnrollmentConfigConstants.SlotSize, "1024" },
+                { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
+                { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
+                { EnrollmentConfigConstants.OrganizationCity, "Example City" },
+                { EnrollmentConfigConstants.OrganizationState, "EX" },
+                { EnrollmentConfigConstants.OrganizationCountry, "USA" },
+                { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
+                { EnrollmentConfigConstants.JurisdictionState, "EX" },
+                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+            }
+        };
+
+        bool success = true;
+        // Act
+        try
+        {
+            plugin.ValidateProductInfo(productInfo, new Dictionary<string, object>()).Wait();
+        }
+        catch
+        {
+            success = false;
+        }
+
+        // Assert
+        Assert.False(success);
+    }
+
     [Theory]
     [InlineData("DV_SSL")]
     [InlineData("DV_WILDCARD_SSL")]
@@ -116,13 +248,17 @@ public class GoDaddyCAPluginTests
     public void GoDaddyCAPlugin_Enroll_ReturnSuccess(string productID)
     {
         // Arrange
-        IGoDaddyClient client = new FakeGoDaddyClient();
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
+        IAnyCAPluginConfigProvider configProvider = new FakeCaConfigProvider(new Config());
+        ICertificateDataReader certificateDataReader = new FakeCertificateDataReader(fakeClient);
+
         GoDaddyCAPlugin plugin = new GoDaddyCAPlugin()
         {
-            Client = client
+            Client = fakeClient
         };
+        plugin.Initialize(configProvider, certificateDataReader);
         
         // CSR
         string subject = "CN=Test Subject";
@@ -180,14 +316,16 @@ public class GoDaddyCAPluginTests
     public void GoDaddyCAPlugin_Renew_ReturnSuccess(string productID)
     {
         // Arrange
-        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert");
+        DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-5);
+        DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(20);
+        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
         string fakeCaRequestId = Guid.NewGuid().ToString();
         
         FakeGoDaddyClient fakeClient = new FakeGoDaddyClient()
         {
             CertificatesIssuedByFakeGoDaddy = new Dictionary<string, AnyCAPluginCertificate>
             {
-                { "test-cert-1", new AnyCAPluginCertificate
+                { fakeCaRequestId, new AnyCAPluginCertificate
                     {
                         CARequestID = fakeCaRequestId,
                         Certificate = fakeCertificate.ExportCertificatePem(),
@@ -201,15 +339,18 @@ public class GoDaddyCAPluginTests
         // Renewal is only available 60 days prior to expiration of the previous certificate and 30 days after the 
         // expiration of the previous certificate. 
 
-        fakeClient.EnrollmentNotBefore = DateTime.UtcNow.AddDays(-5);
-        fakeClient.EnrollmentNotAfter = DateTime.UtcNow.AddDays(20);
+        fakeClient.EnrollmentNotBefore = enrollmentNotBefore;
+        fakeClient.EnrollmentNotAfter = enrollmentNotAfter;
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
 
         IAnyCAPluginConfigProvider configProvider = new FakeCaConfigProvider(new Config());
         ICertificateDataReader certificateDataReader = new FakeCertificateDataReader(fakeClient);
 
-        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin();
+        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin()
+        {
+            Client = fakeClient
+        };
         plugin.Initialize(configProvider, certificateDataReader);
 
         // CSR
@@ -238,7 +379,8 @@ public class GoDaddyCAPluginTests
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
                 { EnrollmentConfigConstants.JurisdictionState, "EX" },
                 { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
-                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" }
+                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
+                { "PriorCertSN", fakeCertificate.SerialNumber }
             }
         };
 
@@ -252,6 +394,8 @@ public class GoDaddyCAPluginTests
         
         // Assert
         Assert.Equal(result.Status, (int)EndEntityStatus.GENERATED);
+        Assert.Equal(result.StatusMessage, $"Certificate with ID {fakeCaRequestId} has been renewed");
+        Assert.Equal(result.CARequestID, fakeCaRequestId);
     }
 
     [Theory]
@@ -268,14 +412,43 @@ public class GoDaddyCAPluginTests
     public void GoDaddyCAPlugin_Reissue_ReturnSuccess(string productID)
     {
         // Arrange
-        IGoDaddyClient client = new FakeGoDaddyClient();
+        DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-100);
+        DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(365);
+        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
+        string fakeCaRequestId = Guid.NewGuid().ToString();
+        
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient()
+        {
+            CertificatesIssuedByFakeGoDaddy = new Dictionary<string, AnyCAPluginCertificate>
+            {
+                { fakeCaRequestId, new AnyCAPluginCertificate
+                    {
+                        CARequestID = fakeCaRequestId,
+                        Certificate = fakeCertificate.ExportCertificatePem(),
+                        Status = 123,
+                        ProductID = productID,
+                    }
+                }
+            }
+        };
+
+        // Renewal is only available 60 days prior to expiration of the previous certificate and 30 days after the 
+        // expiration of the previous certificate. 
+
+        fakeClient.EnrollmentNotBefore = enrollmentNotBefore;
+        fakeClient.EnrollmentNotAfter = enrollmentNotAfter;
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
+
+        IAnyCAPluginConfigProvider configProvider = new FakeCaConfigProvider(new Config());
+        ICertificateDataReader certificateDataReader = new FakeCertificateDataReader(fakeClient);
+
         GoDaddyCAPlugin plugin = new GoDaddyCAPlugin()
         {
-            Client = client
+            Client = fakeClient
         };
-        
+        plugin.Initialize(configProvider, certificateDataReader);
+
         // CSR
         string subject = "CN=Test Subject";
         string csrString = GenerateCSR(subject);
@@ -302,7 +475,8 @@ public class GoDaddyCAPluginTests
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
                 { EnrollmentConfigConstants.JurisdictionState, "EX" },
                 { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
-                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" }
+                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
+                { "PriorCertSN", fakeCertificate.SerialNumber }
             }
         };
 
@@ -316,6 +490,8 @@ public class GoDaddyCAPluginTests
         
         // Assert
         Assert.Equal(result.Status, (int)EndEntityStatus.GENERATED);
+        Assert.Equal(result.StatusMessage, $"Certificate with ID {fakeCaRequestId} has been reissued");
+        Assert.Equal(result.CARequestID, fakeCaRequestId);
     }
 
     static void ConfigureLogging()

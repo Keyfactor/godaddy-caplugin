@@ -379,7 +379,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             CARequestID = certificateId,
             Certificate = certificatePemString,
             Status = GoDaddyCertificateStatusToCAStatus(details.status),
-            StatusMessage = $"Certificate with ID {certificateId} has been renewed"
+            StatusMessage = $"Certificate with ID {certificateId} has been renewed",
         };
     }
 

@@ -94,6 +94,9 @@ public class EnrollmentStrategyFactory
 
         DateTime earliestRenewalDate = expirationDate.Value.AddDays(-60);
         DateTime latestRenewalDate = expirationDate.Value.AddDays(30);
+        _logger.LogTrace($"Certificate with ID {certificateId} [serial number {request.PriorCertSN}] expires on {expirationDate}");
+        _logger.LogTrace($"Earliest renewal date is {earliestRenewalDate}");
+        _logger.LogTrace($"Latest renewal date is {latestRenewalDate}");
 
         if (DateTime.UtcNow < earliestRenewalDate)
         {

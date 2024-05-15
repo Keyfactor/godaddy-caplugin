@@ -58,18 +58,24 @@ public class FakeGoDaddyClient : IGoDaddyClient
 
         public IGoDaddyClient Build()
         {
-            IGoDaddyClient client = new GoDaddyClient(_baseUrl, _apiKey, _apiSecret, _shopperId);
+            IGoDaddyClient client = new FakeGoDaddyClient();
 
             return client;
         }
+    }
+
+    public FakeGoDaddyClient()
+    {
+        EnrollmentNotBefore = DateTime.UtcNow;
+        EnrollmentNotAfter = DateTime.UtcNow.AddYears(1);
     }
 
     ILogger _logger = LogHandler.GetClassLogger<FakeGoDaddyClient>();
 
     public Dictionary<string, AnyCAPluginCertificate>? CertificatesIssuedByFakeGoDaddy { get; set; }
 
-    public DateTime EnrollmentNotBefore = DateTime.UtcNow;
-    public DateTime EnrollmentNotAfter = DateTime.UtcNow.AddYears(1);
+    public DateTime EnrollmentNotBefore;
+    public DateTime EnrollmentNotAfter;
 
     public Task Ping()
     {
@@ -129,6 +135,16 @@ public class FakeGoDaddyClient : IGoDaddyClient
         throw new Exception($"Certificate with ID {certificateId} not found");
     }
 
+    public Task RevokeCertificate(string certificateId, RevokeReason reason)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task CancelCertificateOrder(string certificateId)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request, CancellationToken cancelToken)
     {
         _logger.LogInformation("Enrolling certificate with Fake GoDaddy");
@@ -146,23 +162,6 @@ public class FakeGoDaddyClient : IGoDaddyClient
         return Task.FromResult(result);
     }
 
-    public Task<EnrollmentResult> Renew(string certificateId, RenewCertificateRestRequest request, CancellationToken cancelToken)
-    {
-        _logger.LogInformation("Renewing certificate with Fake GoDaddy");
-        X509Certificate2 cert = SignFakeCsr(request.Csr);
-
-        _logger.LogDebug("Preparing EnrollmentResult object");
-        EnrollmentResult result = new EnrollmentResult
-        {
-            CARequestID = certificateId,
-            Status = (int)EndEntityStatus.GENERATED,
-            StatusMessage = "Certificate renewed successfully",
-            Certificate = cert.ExportCertificatePem()
-        };
-
-        return Task.FromResult(result);
-    }
-
     public Task<EnrollmentResult> Reissue(string certificateId, ReissueCertificateRestRequest request, CancellationToken cancelToken)
     {
         _logger.LogInformation("Reissuing certificate with Fake GoDaddy");
@@ -173,7 +172,24 @@ public class FakeGoDaddyClient : IGoDaddyClient
         {
             CARequestID = certificateId,
             Status = (int)EndEntityStatus.GENERATED,
-            StatusMessage = "Certificate reissued successfully",
+            StatusMessage = $"Certificate with ID {certificateId} has been reissued",
+            Certificate = cert.ExportCertificatePem()
+        };
+
+        return Task.FromResult(result);
+    }
+
+    public Task<EnrollmentResult> Renew(string certificateId, RenewCertificateRestRequest request, CancellationToken cancelToken)
+    {
+        _logger.LogInformation("Renewing certificate with Fake GoDaddy");
+        X509Certificate2 cert = SignFakeCsr(request.Csr);
+
+        _logger.LogDebug("Preparing EnrollmentResult object");
+        EnrollmentResult result = new EnrollmentResult
+        {
+            CARequestID = certificateId,
+            Status = (int)EndEntityStatus.GENERATED,
+            StatusMessage = $"Certificate with ID {certificateId} has been renewed",
             Certificate = cert.ExportCertificatePem()
         };
 
@@ -192,7 +208,7 @@ public class FakeGoDaddyClient : IGoDaddyClient
 
         _logger.LogDebug("Generating self-signed CA certificate");
         using var caKeyPair = RSA.Create(2048);
-        var caCertificate = GenerateSelfSignedCertificate(caKeyPair, "CN=Test CA");
+        var caCertificate = GenerateSelfSignedCertificate(caKeyPair, "CN=Test CA", DateTime.UtcNow, DateTime.UtcNow.AddYears(1));
 
         var serialNumber = new byte[8];
         using (var rng = RandomNumberGenerator.Create())
@@ -200,7 +216,7 @@ public class FakeGoDaddyClient : IGoDaddyClient
             rng.GetBytes(serialNumber);
         }
 
-        _logger.LogDebug("Creating certificate from CSR");
+        _logger.LogDebug($"Creating certificate from CSR valid from {EnrollmentNotBefore} to {EnrollmentNotAfter}");
         X509Certificate2 cert = csr.Create(
             caCertificate.SubjectName,
             X509SignatureGenerator.CreateForRSA(caKeyPair, RSASignaturePadding.Pkcs1),
@@ -212,7 +228,7 @@ public class FakeGoDaddyClient : IGoDaddyClient
         return cert;
     }
 
-    public static X509Certificate2 GenerateSelfSignedCertificate(RSA keyPair, string subjectName)
+    public static X509Certificate2 GenerateSelfSignedCertificate(RSA keyPair, string subjectName, DateTimeOffset notBefore, DateTimeOffset notAfter)
     {
         var request = new CertificateRequest(
             new X500DistinguishedName(subjectName),
@@ -220,17 +236,7 @@ public class FakeGoDaddyClient : IGoDaddyClient
             HashAlgorithmName.SHA256,
             RSASignaturePadding.Pkcs1
         );
-        var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
+        var cert = request.CreateSelfSigned(notBefore, notAfter);
         return cert;
-    }
-
-    public Task RevokeCertificate(string certificateId, RevokeReason reason)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task CancelCertificateOrder(string certificateId)
-    {
-        throw new NotImplementedException();
     }
 }

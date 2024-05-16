@@ -147,6 +147,76 @@ public class FakeGoDaddyClient : IGoDaddyClient
 
     public Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request, CancellationToken cancelToken)
     {
+        // Validate that request has the correct fields for the product type
+        switch (request.ProductType)
+        {
+            case "DV_SSL":
+            case "DV_WILDCARD_SSL":
+            case "UCC_DV_SSL":
+                Assert.NotNull(request.Contact);
+                Assert.NotNull(request.Contact.Email);
+                Assert.NotNull(request.Contact.NameFirst);
+                Assert.NotNull(request.Contact.NameLast);
+                Assert.NotNull(request.Contact.Phone);
+
+                Assert.NotNull(request.Csr);
+                Assert.NotNull(request.Period);
+                Assert.NotNull(request.SlotSize);
+                break;
+
+            case "OV_SSL":
+            case "OV_CS":
+            case "OV_DS":
+            case "OV_WILDCARD_SSL":
+            case "UCC_OV_SSL":
+                Assert.NotNull(request.Contact);
+                Assert.NotNull(request.Contact.Email);
+                Assert.NotNull(request.Contact.NameFirst);
+                Assert.NotNull(request.Contact.NameLast);
+                Assert.NotNull(request.Contact.Phone);
+
+                Assert.NotNull(request.Organization);
+                Assert.NotNull(request.Organization.Name);
+                Assert.NotNull(request.Organization.Address);
+                Assert.NotNull(request.Organization.Address.City);
+                Assert.NotNull(request.Organization.Address.State);
+                Assert.NotNull(request.Organization.Address.Country);
+                Assert.NotNull(request.Organization.Phone);
+
+                Assert.NotNull(request.Csr);
+                Assert.NotNull(request.Period);
+                Assert.NotNull(request.SlotSize);
+                break;
+
+            case "EV_SSL":
+            case "UCC_EV_SSL":
+                Assert.NotNull(request.Contact);
+                Assert.NotNull(request.Contact.Email);
+                Assert.NotNull(request.Contact.NameFirst);
+                Assert.NotNull(request.Contact.NameLast);
+                Assert.NotNull(request.Contact.Phone);
+
+                Assert.NotNull(request.Organization);
+                Assert.NotNull(request.Organization.Name);
+                Assert.NotNull(request.Organization.Address);
+                Assert.NotNull(request.Organization.Address.City);
+                Assert.NotNull(request.Organization.Address.State);
+                Assert.NotNull(request.Organization.Address.Country);
+                Assert.NotNull(request.Organization.Phone);
+
+                Assert.NotNull(request.Organization.RegistrationAgent);
+                Assert.NotNull(request.Organization.RegistrationNumber);
+                Assert.NotNull(request.Contact.JobTitle);
+
+                Assert.NotNull(request.Csr);
+                Assert.NotNull(request.Period);
+                Assert.NotNull(request.SlotSize);
+                break;
+
+            default:
+                _logger.LogError($"Invalid product type: {request.ProductType}");
+                throw new ArgumentException($"Invalid product type: {request.ProductType}");
+        }
         _logger.LogInformation("Enrolling certificate with Fake GoDaddy");
         X509Certificate2 cert = SignFakeCsr(request.Csr);
 

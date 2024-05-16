@@ -117,12 +117,12 @@ public class GoDaddyCAPluginTests
             ProductID = "DV_SSL",
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
+                { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
+                { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
-                { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
-                { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
             }
         };
 
@@ -156,13 +156,14 @@ public class GoDaddyCAPluginTests
             ProductID = "OV_SSL",
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
@@ -201,21 +202,23 @@ public class GoDaddyCAPluginTests
             ProductID = "EV_SSL",
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
                 { EnrollmentConfigConstants.OrganizationState, "EX" },
                 { EnrollmentConfigConstants.OrganizationCountry, "USA" },
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
-                { EnrollmentConfigConstants.JurisdictionState, "EX" },
-                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+                // EV
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
             }
         };
         bool success = true;
@@ -271,22 +274,24 @@ public class GoDaddyCAPluginTests
             ProductID = productID,
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
                 { EnrollmentConfigConstants.OrganizationState, "EX" },
                 { EnrollmentConfigConstants.OrganizationCountry, "USA" },
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
-                { EnrollmentConfigConstants.JurisdictionState, "EX" },
-                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
-                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" }
+                // EV
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
+                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
             }
         };
 
@@ -364,21 +369,23 @@ public class GoDaddyCAPluginTests
             ProductID = productID,
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
                 { EnrollmentConfigConstants.OrganizationState, "EX" },
                 { EnrollmentConfigConstants.OrganizationCountry, "USA" },
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
-                { EnrollmentConfigConstants.JurisdictionState, "EX" },
-                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+                // EV
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
                 { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
                 { "PriorCertSN", fakeCertificate.SerialNumber }
             }
@@ -460,21 +467,23 @@ public class GoDaddyCAPluginTests
             ProductID = productID,
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
                 { EnrollmentConfigConstants.OrganizationState, "EX" },
                 { EnrollmentConfigConstants.OrganizationCountry, "USA" },
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
-                { EnrollmentConfigConstants.JurisdictionState, "EX" },
-                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+                // EV
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
                 { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
                 { "PriorCertSN", fakeCertificate.SerialNumber }
             }
@@ -524,21 +533,23 @@ public class GoDaddyCAPluginTests
             ProductID = "DV_SSL",
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "5" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
                 { EnrollmentConfigConstants.OrganizationState, "EX" },
                 { EnrollmentConfigConstants.OrganizationCountry, "USA" },
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
-                { EnrollmentConfigConstants.JurisdictionState, "EX" },
-                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+                // EV
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
                 { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" }
             }
         };

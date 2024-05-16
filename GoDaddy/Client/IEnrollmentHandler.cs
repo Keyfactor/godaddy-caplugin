@@ -31,20 +31,22 @@ public class EnrollmentRequest
 
     // Enrollment Config (specified by Workflow or Enrollment Parameters)
     public int CertificateValidityInYears;
-    public string JobTitle;
+    public string SlotSize;
+    // DV
     public string LastName;
     public string FirstName;
     public string Email;
     public string Phone;
-    public string SlotSize;
+    // OV
     public string OrganizationName;
     public string OrganizationAddress;
     public string OrganizationCity;
     public string OrganizationState;
     public string OrganizationCountry;
     public string OrganizationPhone;
-    public string JurisdictionState;
-    public string JurisdictionCountry;
+    // EV
+    public string JobTitle;
+    public string RegistrationAgent;
     public string RegistrationNumber;
 
     // AnyGateway REST config

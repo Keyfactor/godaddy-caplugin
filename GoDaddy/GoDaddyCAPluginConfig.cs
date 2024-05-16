@@ -52,8 +52,7 @@ public class GoDaddyCAPluginConfig
         public const string OrganizationState = "OrganizationState";
         public const string OrganizationCountry = "OrganizationCountry";
         public const string OrganizationPhone = "OrganizationPhone";
-        public const string JurisdictionState = "JurisdictionState";
-        public const string JurisdictionCountry = "JurisdictionCountry";
+        public const string RegistrationAgent = "RegistrationAgent";
         public const string RegistrationNumber = "RegistrationNumber";
     }
 
@@ -194,16 +193,9 @@ public class GoDaddyCAPluginConfig
                 DefaultValue = "",
                 Type = "String"
             },
-            [EnrollmentConfigConstants.JurisdictionState] = new PropertyConfigInfo()
+            [EnrollmentConfigConstants.RegistrationAgent] = new PropertyConfigInfo()
             {
-                Comments = "State where documents were filed to create the organization",
-                Hidden = false,
-                DefaultValue = "",
-                Type = "String"
-            },
-            [EnrollmentConfigConstants.JurisdictionCountry] = new PropertyConfigInfo()
-            {
-                Comments = "Country where documents were filed to create the organization",
+                Comments = "Registration agent name assigned to the organization when its documents were filed for registration",
                 Hidden = false,
                 DefaultValue = "",
                 Type = "String"

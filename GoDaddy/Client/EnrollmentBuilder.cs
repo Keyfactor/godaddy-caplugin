@@ -47,8 +47,34 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
         }
         _logger.LogDebug($"Product type: {_theEnrollmentRequest.ProductType}");
 
-        List<string> requiredCustomParameters = new List<string>();
+        // Parameter               | DV Required | OV Required | EV Required | Notes
+        // ------------------------------------------------------------------------------------------------------------------------------------------------
+        // callbackUrl             | No          | No          | No          | Required if client wants stateful actions via callback during certificate lifecycle.
+        // commonName              | No          | No          | No          |
+        // contact                 | Yes         | Yes         | Yes         |
+        // contact.email           | Yes         | Yes         | Yes         |
+        // contact.jobTitle        | No          | No          | Yes         | Only used for EVSSL.
+        // contact.nameFirst       | Yes         | Yes         | Yes         |
+        // contact.nameLast        | Yes         | Yes         | Yes         |
+        // contact.nameMiddle      | No          | No          | No          |
+        // contact.phone           | Yes         | Yes         | Yes         |
+        // contact.suffix          | No          | No          | No          |
+        // csr                     | Yes         | Yes         | Yes         |
+        // intelVPro               | No          | Conditional | No          | Default is false. Only used for OV.
+        // organization            | No          | Yes         | Yes         |
+        // organization.address    | No          | Yes         | Yes         |
+        // organization.assumedName| No          | No          | Yes         | Only for EVSSL.
+        // organization.name       | No          | Yes         | Yes         |
+        // organization.phone      | No          | Yes         | Yes         |
+        // organization.registrationAgent | No   | No          | Yes         | Only for EVSSL.
+        // organization.registrationNumber | No  | No          | Yes         | Only for EVSSL.
+        // period                  | Yes         | Yes         | Yes         |
+        // productType             | Yes         | Yes         | Yes         | Required for non-renewal.
+        // rootType                | No          | No          | No          | Default is STARFIELD_SHA_2.
+        // slotSize                | No          | No          | No          |
+        // subjectAlternativeNames | No          | No          | No          | Unique items. Collection of subject alternative names to be included in certificate.
 
+        List<string> requiredCustomParameters = new List<string>();
         switch (_theEnrollmentRequest.ProductType)
         {
             case CertificateEnrollmentType.DV_SSL:
@@ -110,8 +136,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     EnrollmentConfigConstants.OrganizationPhone,
 
                     // Extended Validation
-                    EnrollmentConfigConstants.JurisdictionState,
-                    EnrollmentConfigConstants.JurisdictionCountry,
+                    EnrollmentConfigConstants.RegistrationAgent,
                     EnrollmentConfigConstants.RegistrationNumber,
                     EnrollmentConfigConstants.JobTitle,
 

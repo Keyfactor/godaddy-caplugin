@@ -52,22 +52,31 @@ public class EnrollmentAbstractionTests
             SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
             CommonName = "example.com",
             IntelVPro = true,
+
+            // Enrollment Config (specified by Workflow or Enrollment Parameters)
             CertificateValidityInYears = 2,
-            JobTitle = "IT Manager",
+            SlotSize = "5",
+
+            // DV
             LastName = "Doe",
             FirstName = "John",
             Email = "john.doe@example.com",
             Phone = "+1234567890",
-            SlotSize = "2048",
+
+            // OV
             OrganizationName = "Example Organization",
             OrganizationAddress = "123 Example St",
             OrganizationCity = "Example City",
             OrganizationState = "EX",
             OrganizationCountry = "Example Country",
             OrganizationPhone = "+0987654321",
-            JurisdictionState = "EX",
-            JurisdictionCountry = "Example Country",
+
+            // EV
+            JobTitle = "IT Manager",
+            RegistrationAgent = "Example Agent",
             RegistrationNumber = "123456789",
+
+            // AnyGateway REST config
             PriorCertSN = "123456789ABCDEF"
         };
 
@@ -120,23 +129,32 @@ public class EnrollmentAbstractionTests
             SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
             CommonName = "example.com",
             IntelVPro = true,
+
+            // Enrollment Config (specified by Workflow or Enrollment Parameters)
             CertificateValidityInYears = 2,
-            JobTitle = "IT Manager",
+            SlotSize = "5",
+
+            // DV
             LastName = "Doe",
             FirstName = "John",
             Email = "john.doe@example.com",
             Phone = "+1234567890",
-            SlotSize = "2048",
+
+            // OV
             OrganizationName = "Example Organization",
             OrganizationAddress = "123 Example St",
             OrganizationCity = "Example City",
             OrganizationState = "EX",
             OrganizationCountry = "Example Country",
             OrganizationPhone = "+0987654321",
-            JurisdictionState = "EX",
-            JurisdictionCountry = "Example Country",
+
+            // EV
+            JobTitle = "IT Manager",
+            RegistrationAgent = "Example Agent",
             RegistrationNumber = "123456789",
-            PriorCertSN = fakeCertificate.SerialNumber,
+
+            // AnyGateway REST config
+            PriorCertSN = fakeCertificate.SerialNumber
         };
 
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
@@ -185,23 +203,32 @@ public class EnrollmentAbstractionTests
             SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
             CommonName = "example.com",
             IntelVPro = true,
+
+            // Enrollment Config (specified by Workflow or Enrollment Parameters)
             CertificateValidityInYears = 2,
-            JobTitle = "IT Manager",
+            SlotSize = "5",
+
+            // DV
             LastName = "Doe",
             FirstName = "John",
             Email = "john.doe@example.com",
             Phone = "+1234567890",
-            SlotSize = "2048",
+
+            // OV
             OrganizationName = "Example Organization",
             OrganizationAddress = "123 Example St",
             OrganizationCity = "Example City",
             OrganizationState = "EX",
             OrganizationCountry = "Example Country",
             OrganizationPhone = "+0987654321",
-            JurisdictionState = "EX",
-            JurisdictionCountry = "Example Country",
+
+            // EV
+            JobTitle = "IT Manager",
+            RegistrationAgent = "Example Agent",
             RegistrationNumber = "123456789",
-            PriorCertSN = fakeCertificate.SerialNumber,
+
+            // AnyGateway REST config
+            PriorCertSN = fakeCertificate.SerialNumber
         };
 
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
@@ -229,21 +256,23 @@ public class EnrollmentAbstractionTests
             ProductID = "EV_SSL",
             ProductParameters = new Dictionary<string, string>
             {
-                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
                 { EnrollmentConfigConstants.Email, "john.doe@example.com" },
                 { EnrollmentConfigConstants.Phone, "123-456-7890" },
-                { EnrollmentConfigConstants.SlotSize, "1024" },
+                // OV
                 { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
                 { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
                 { EnrollmentConfigConstants.OrganizationCity, "Example City" },
                 { EnrollmentConfigConstants.OrganizationState, "EX" },
                 { EnrollmentConfigConstants.OrganizationCountry, "USA" },
                 { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
-                { EnrollmentConfigConstants.JurisdictionState, "EX" },
-                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+                // EV
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
                 { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" }
             }
         };
@@ -263,21 +292,23 @@ public class EnrollmentAbstractionTests
         _logger.LogDebug($"{JsonConvert.SerializeObject(request)}");
 
         // Assert
-        Assert.Equal("Software Engineer", request.JobTitle);
+        Assert.Equal("5", request.SlotSize);
         Assert.Equal(2, request.CertificateValidityInYears);
+        // DV
         Assert.Equal("Doe", request.LastName);
         Assert.Equal("John", request.FirstName);
         Assert.Equal("john.doe@example.com", request.Email);
         Assert.Equal("123-456-7890", request.Phone);
-        Assert.Equal("1024", request.SlotSize);
+        // OV
         Assert.Equal("Example Corp", request.OrganizationName);
         Assert.Equal("1234 Elm Street", request.OrganizationAddress);
         Assert.Equal("Example City", request.OrganizationCity);
         Assert.Equal("EX", request.OrganizationState);
         Assert.Equal("USA", request.OrganizationCountry);
         Assert.Equal("987-654-3210", request.OrganizationPhone);
-        Assert.Equal("EX", request.JurisdictionState);
-        Assert.Equal("USA", request.JurisdictionCountry);
+        // EV
+        Assert.Equal("Software Engineer", request.JobTitle);
+        Assert.Equal("Agent", request.RegistrationAgent);
         Assert.Equal("REG-12345", request.RegistrationNumber);
 
         Assert.Equal(request.SubjectAlternativeNames.Length, 3);

@@ -132,6 +132,8 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
         _logger.LogDebug("NewEnrollmentStrategy - Preparing GoDaddy Certificate Order");
 
         // Map the EnrollmentRequest to a CertificateOrderRestRequest
+        // The JSON serialization will omit null fields. We assume that EnrollmentRequest contains the correct
+        // fields for the corresponding ProductType.
         CertificateOrderRestRequest enrollmentRestRequest = new CertificateOrderRestRequest
         {
             Csr = request.CSR,
@@ -165,6 +167,8 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
                 },
                 Name = request.OrganizationName,
                 Phone = request.OrganizationPhone,
+                RegistrationAgent = request.RegistrationAgent,
+                RegistrationNumber = request.RegistrationNumber
             };
         }
 

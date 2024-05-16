@@ -25,7 +25,6 @@ using Keyfactor.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RestSharp;
 using RestSharp.Authenticators;
 using RestSharp.Serializers.Json;
@@ -33,7 +32,6 @@ using RestSharp.Serializers.Json;
 namespace GoDaddy.Client;
 
 public class GoDaddyAuthenticator : AuthenticatorBase {
-    private ILogger _logger = LogHandler.GetClassLogger<GoDaddyAuthenticator>();
     readonly string _baseUrl;
     readonly string _apiKey;
     readonly string _apiSecret;
@@ -44,7 +42,6 @@ public class GoDaddyAuthenticator : AuthenticatorBase {
     }
 
     protected override ValueTask<RestSharp.Parameter> GetAuthenticationParameter(string accessToken) {
-        _logger.LogTrace($"Getting authentication parameter: {_apiKey}:{_apiSecret}");
         var parameter = new HeaderParameter(KnownHeaders.Authorization, $"sso-key {_apiKey}:{_apiSecret}");
         return new ValueTask<RestSharp.Parameter>(parameter);
     }
@@ -537,13 +534,6 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         where TResponse : class
     {
         _logger.LogTrace($"Setting up POST request to {endpoint}");
-        string jsonBody = JsonConvert.SerializeObject(body, 
-            Newtonsoft.Json.Formatting.None, 
-            new JsonSerializerSettings { 
-                NullValueHandling = NullValueHandling.Ignore,
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-        });
-        _logger.LogTrace($"Request body:\n{jsonBody}");
         var request = new RestRequest(endpoint, Method.Post);
         request.AddJsonBody<TRequest>(body);
 
@@ -585,7 +575,6 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                     _logger.LogError($"Failed to POST {endpoint}: {e.Message}");
                     throw;
                 }
-                _logger.LogTrace($"Response content: {response.Content}");
 
                 var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
                 if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)

@@ -32,6 +32,8 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
     ILogger _logger = LogHandler.GetClassLogger<GoDaddyCAPlugin>();
     ICertificateDataReader _certificateDataReader;
 
+    private const int _certificateIssuanceTimeoutSeconds = 600;
+
     public void Initialize(IAnyCAPluginConfigProvider configProvider, ICertificateDataReader certificateDataReader)
     {
         if (Client == null)
@@ -132,7 +134,18 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
 
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(_certificateDataReader, Client);
         IEnrollmentStrategy strategy = await factory.GetStrategy(request);
-        return await strategy.ExecuteAsync(request, CancellationToken.None);
+
+        CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(_certificateIssuanceTimeoutSeconds));
+        CancellationToken token = tokenSource.Token;
+        try
+        {
+            return await strategy.ExecuteAsync(request, token);
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogWarning("Enrollment task was cancelled: " + ex.Message);
+            return null;
+        }
     }
 
     public async Task<AnyCAPluginCertificate> GetSingleRecord(string caRequestID)

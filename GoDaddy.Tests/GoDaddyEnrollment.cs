@@ -36,7 +36,184 @@ public class EnrollmentAbstractionTests
         _logger = LogHandler.GetClassLogger<EnrollmentAbstractionTests>();
     }
 
-    [IntegrationTestingFact]
+    [Fact]
+    public void EnrollmentStrategyFactory_Enrollment_ValidParameters_ReturnSuccess()
+    {
+        // Arrange
+        string subject = "CN=Test Subject";
+        string csrString = GenerateCSR(subject);
+
+        EnrollmentRequest fakeRequest = new EnrollmentRequest
+        {
+            ProductType = CertificateEnrollmentType.DV_SSL,
+            CSR = csrString,
+            EnrollmentType = EnrollmentType.New,
+            RootCAType = RootCAType.STARFIELD_SHA_2,
+            SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
+            CommonName = "example.com",
+            IntelVPro = true,
+            CertificateValidityInYears = 2,
+            JobTitle = "IT Manager",
+            LastName = "Doe",
+            FirstName = "John",
+            Email = "john.doe@example.com",
+            Phone = "+1234567890",
+            SlotSize = "2048",
+            OrganizationName = "Example Organization",
+            OrganizationAddress = "123 Example St",
+            OrganizationCity = "Example City",
+            OrganizationState = "EX",
+            OrganizationCountry = "Example Country",
+            OrganizationPhone = "+0987654321",
+            JurisdictionState = "EX",
+            JurisdictionCountry = "Example Country",
+            RegistrationNumber = "123456789",
+            PriorCertSN = "123456789ABCDEF"
+        };
+
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
+        ICertificateDataReader fakeCertificateReader = new FakeCertificateDataReader(fakeClient);
+
+        EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
+
+        // Act
+        IEnrollmentStrategy strategy = factory.GetStrategy(fakeRequest).Result;
+
+        // Assert
+        Assert.Equal("Enrollment", strategy.StrategyName);
+    }
+
+    [Fact]
+    public void EnrollmentStrategyFactory_Renewal_ValidParameters_ReturnSuccess()
+    {
+        // Arrange
+        DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-5);
+        DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(20);
+        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
+        string fakeCaRequestId = Guid.NewGuid().ToString();
+        
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient()
+        {
+            CertificatesIssuedByFakeGoDaddy = new Dictionary<string, AnyCAPluginCertificate>
+            {
+                { fakeCaRequestId, new AnyCAPluginCertificate
+                    {
+                        CARequestID = fakeCaRequestId,
+                        Certificate = fakeCertificate.ExportCertificatePem(),
+                        Status = 123,
+                        ProductID = "DV_SSL",
+                    }
+                }
+            }
+        };
+        ICertificateDataReader fakeCertificateReader = new FakeCertificateDataReader(fakeClient);
+
+        string subject = "CN=Test Subject";
+        string csrString = GenerateCSR(subject);
+
+        EnrollmentRequest fakeRequest = new EnrollmentRequest
+        {
+            ProductType = CertificateEnrollmentType.DV_SSL,
+            CSR = csrString,
+            EnrollmentType = EnrollmentType.RenewOrReissue,
+            RootCAType = RootCAType.STARFIELD_SHA_2,
+            SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
+            CommonName = "example.com",
+            IntelVPro = true,
+            CertificateValidityInYears = 2,
+            JobTitle = "IT Manager",
+            LastName = "Doe",
+            FirstName = "John",
+            Email = "john.doe@example.com",
+            Phone = "+1234567890",
+            SlotSize = "2048",
+            OrganizationName = "Example Organization",
+            OrganizationAddress = "123 Example St",
+            OrganizationCity = "Example City",
+            OrganizationState = "EX",
+            OrganizationCountry = "Example Country",
+            OrganizationPhone = "+0987654321",
+            JurisdictionState = "EX",
+            JurisdictionCountry = "Example Country",
+            RegistrationNumber = "123456789",
+            PriorCertSN = fakeCertificate.SerialNumber,
+        };
+
+        EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
+
+        // Act
+        IEnrollmentStrategy strategy = factory.GetStrategy(fakeRequest).Result;
+
+        // Assert
+        Assert.Equal("Renewal", strategy.StrategyName);
+    }
+
+    [Fact]
+    public void EnrollmentStrategyFactory_Reissue_ValidParameters_ReturnSuccess()
+    {
+        // Arrange
+        DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-100);
+        DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(365);
+        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
+        string fakeCaRequestId = Guid.NewGuid().ToString();
+        
+        FakeGoDaddyClient fakeClient = new FakeGoDaddyClient()
+        {
+            CertificatesIssuedByFakeGoDaddy = new Dictionary<string, AnyCAPluginCertificate>
+            {
+                { fakeCaRequestId, new AnyCAPluginCertificate
+                    {
+                        CARequestID = fakeCaRequestId,
+                        Certificate = fakeCertificate.ExportCertificatePem(),
+                        Status = 123,
+                        ProductID = "DV_SSL",
+                    }
+                }
+            }
+        };
+        ICertificateDataReader fakeCertificateReader = new FakeCertificateDataReader(fakeClient);
+
+        string subject = "CN=Test Subject";
+        string csrString = GenerateCSR(subject);
+
+        EnrollmentRequest fakeRequest = new EnrollmentRequest
+        {
+            ProductType = CertificateEnrollmentType.DV_SSL,
+            CSR = csrString,
+            EnrollmentType = EnrollmentType.RenewOrReissue,
+            RootCAType = RootCAType.STARFIELD_SHA_2,
+            SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
+            CommonName = "example.com",
+            IntelVPro = true,
+            CertificateValidityInYears = 2,
+            JobTitle = "IT Manager",
+            LastName = "Doe",
+            FirstName = "John",
+            Email = "john.doe@example.com",
+            Phone = "+1234567890",
+            SlotSize = "2048",
+            OrganizationName = "Example Organization",
+            OrganizationAddress = "123 Example St",
+            OrganizationCity = "Example City",
+            OrganizationState = "EX",
+            OrganizationCountry = "Example Country",
+            OrganizationPhone = "+0987654321",
+            JurisdictionState = "EX",
+            JurisdictionCountry = "Example Country",
+            RegistrationNumber = "123456789",
+            PriorCertSN = fakeCertificate.SerialNumber,
+        };
+
+        EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
+
+        // Act
+        IEnrollmentStrategy strategy = factory.GetStrategy(fakeRequest).Result;
+
+        // Assert
+        Assert.Equal("Reissue", strategy.StrategyName);
+    }
+
+    [Fact]
     public void EnrollmentBuilder_ValidParameters_ReturnSuccess()
     {
         // Arrange

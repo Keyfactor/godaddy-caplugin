@@ -15,6 +15,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
@@ -22,8 +25,10 @@ using Keyfactor.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RestSharp;
 using RestSharp.Authenticators;
+using RestSharp.Serializers.Json;
 
 namespace GoDaddy.Client;
 
@@ -50,10 +55,12 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
     readonly RestClient _client;
 
     // Rate Limiter
+    private static Mutex _rateLimitMutex = new Mutex();
     private static double _maxRequestsPerMinute = 60.0;
     private double _availableRequests = _maxRequestsPerMinute;
     private DateTime _lastUpdate = DateTime.Now;
 
+    private static int _retriesPerRestOperation = 3;
     private static int _pageSize = 50;
     string _shopperId;
     string _customerId;
@@ -104,10 +111,18 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         var options = new RestClientOptions(apiUrl){
             Authenticator = new GoDaddyAuthenticator(apiKey, apiSecret),
-            ThrowOnAnyError = true
         };
 
-        _client = new RestClient(options);
+        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+
+        _client = new RestClient(
+                options,
+                configureSerialization: s => s.UseSystemTextJson(jsonSerializerOptions)
+        );
 
         this._shopperId = shopperId;
     }
@@ -253,8 +268,24 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         const int delay = 1000;
         CertificateDetailsRestResponse details;
+        DateTime startTime = DateTime.Now;
+
+        TaskCompletionSource<bool> callbackCompletionSource = new TaskCompletionSource<bool>();
+        cancelToken.Register(async () =>
+        {
+            _logger.LogWarning($"Cancellation requested - cancelling certificate with ID {certificateOrder.certificateId}");
+            await CancelCertificateOrder(certificateOrder.certificateId);
+            callbackCompletionSource.SetResult(true);
+        });
+
         do
         {
+            if (cancelToken.IsCancellationRequested)
+            {
+                await callbackCompletionSource.Task;
+                _logger.LogTrace("Cancellation callback task complete - throwing TaskCanceledException");
+                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
+            }
             details = await GetCertificateDetails(certificateOrder.certificateId);
             if ((int)EndEntityStatus.GENERATED == GoDaddyCertificateStatusToCAStatus(details.status))
             {
@@ -262,12 +293,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 break;
             }
 
-            if (cancelToken.IsCancellationRequested)
-            {
-                _logger.LogDebug($"Cancellation requested - cancelling certificate with ID {certificateOrder.certificateId}");
-                await CancelCertificateOrder(certificateOrder.certificateId);
-                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
-            }
+            _logger.LogDebug($"Waiting for certificate with ID {certificateOrder.certificateId} to be issued [{details.progress}%] ({DateTime.Now - startTime} elapsed)");
 
             await Task.Delay(delay);
         }
@@ -278,6 +304,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         {
             throw new Exception("Failed to get certificate details");
         }
+
+        _logger.LogDebug($"Certificate with ID {certificateOrder.certificateId} has been issued - downloading certificate ({DateTime.Now - startTime} elapsed)");
 
         string certificatePemString = await DownloadCertificatePem(certificateOrder.certificateId);
         return new EnrollmentResult
@@ -298,22 +326,30 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         _logger.LogDebug($"Successfully submitted request to reissue certificate with ID {certificateId} - Waiting for certificate to be issued");
 
+        TaskCompletionSource<bool> callbackCompletionSource = new TaskCompletionSource<bool>();
+        cancelToken.Register(async () =>
+        {
+            _logger.LogWarning($"Cancellation requested - cancelling certificate with ID {certificateId}");
+            await CancelCertificateOrder(certificateId);
+            callbackCompletionSource.SetResult(true);
+        });
+
         const int delay = 1000;
         CertificateDetailsRestResponse details;
         do
         {
+            if (cancelToken.IsCancellationRequested)
+            {
+                await callbackCompletionSource.Task;
+                _logger.LogTrace("Cancellation callback task complete - throwing TaskCanceledException");
+                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
+            }
+
             details = await GetCertificateDetails(certificateId);
             if ((int)EndEntityStatus.GENERATED == GoDaddyCertificateStatusToCAStatus(details.status))
             {
                 _logger.LogDebug($"Certificate with ID {certificateId} has been reissued");
                 break;
-            }
-
-            if (cancelToken.IsCancellationRequested)
-            {
-                _logger.LogDebug($"Cancellation requested - cancelling reissue request for certificate with ID {certificateId}");
-                await CancelCertificateOrder(certificateId);
-                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
             }
 
             await Task.Delay(delay);
@@ -342,25 +378,32 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         string path = $"v1/certificates/{certificateId}/renew";
         RenewCertificateRestResponse certificateOrder = await PostAsync<RenewCertificateRestRequest, RenewCertificateRestResponse>(path, request);
-
         _logger.LogDebug($"Successfully submitted request to renew certificate with ID {certificateId} - Waiting for certificate to be issued");
+
+        TaskCompletionSource<bool> callbackCompletionSource = new TaskCompletionSource<bool>();
+        cancelToken.Register(async () =>
+        {
+            _logger.LogWarning($"Cancellation requested - cancelling certificate with ID {certificateId}");
+            await CancelCertificateOrder(certificateId);
+            callbackCompletionSource.SetResult(true);
+        });
 
         const int delay = 1000;
         CertificateDetailsRestResponse details;
         do
         {
+            if (cancelToken.IsCancellationRequested)
+            {
+                await callbackCompletionSource.Task;
+                _logger.LogTrace("Cancellation callback task complete - throwing TaskCanceledException");
+                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
+            }
+
             details = await GetCertificateDetails(certificateId);
             if ((int)EndEntityStatus.GENERATED == GoDaddyCertificateStatusToCAStatus(details.status))
             {
                 _logger.LogDebug($"Certificate with ID {certificateId} has been renewed");
                 break;
-            }
-
-            if (cancelToken.IsCancellationRequested)
-            {
-                _logger.LogDebug($"Cancellation requested - cancelling renewal request for certificate with ID {certificateId}");
-                await CancelCertificateOrder(certificateId);
-                throw new TaskCanceledException("Cancellation requested - certificate order cancelled");
             }
 
             await Task.Delay(delay);
@@ -401,6 +444,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         string path = $"/v1/certificates/{certificateId}/cancel";
         await PostAsync<CancelCertificateOrderRestRequest, CancelCertificateOrderRestResponse>(path, request);
+        _logger.LogDebug($"Successfully cancelled certificate order with ID {certificateId}");
     }
 
     public async Task<TResponse> GetAsync<TResponse>(string endpoint, IDictionary<string, string> query = null)
@@ -419,56 +463,73 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             _logger.LogTrace($"Adding query parameter: {param.Key}={param.Value}");
         }
 
-        UpdateRateLimits();
-        if (_availableRequests < 1)
+        for (int i = 0; i < _retriesPerRestOperation; i++)
         {
-            _logger.LogTrace("Rate limit exceeded - waiting for more requests to be available");
-            while (_availableRequests < 1)
+            try
             {
-                await Task.Delay(100);
                 UpdateRateLimits();
+                if (_availableRequests < 1)
+                {
+                    _logger.LogTrace("Rate limit exceeded - waiting for more requests to be available");
+                    while (_availableRequests < 1)
+                    {
+                        await Task.Delay(100);
+                        UpdateRateLimits();
+                    }
+                }
+                DecrementRateLimit();
+
+                _logger.LogTrace($"Sending GET request to {endpoint}");
+                var response = await _client.ExecuteAsync(request);
+
+                var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
+                if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
+                {
+                    _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
+                    return JsonConvert.DeserializeObject<TResponse>(response.Content);
+                }
+
+                _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
+                if (response.Content == null)
+                {
+                    throw new Exception("Response was not successful and no content was returned.");
+                }
+
+                Error errorResponse;
+                try
+                {
+                    _logger.LogTrace("Serializing response content to error object");
+                    errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
+                }
+                catch (JsonReaderException)
+                {
+                    throw new Exception($"Failed to GET {endpoint}: {response.Content} (failed to serialize to error)");
+                }
+
+                string message = $"Failed to GET {endpoint}: {errorResponse.message} [{errorResponse.code}]";
+                if (errorResponse.fields != null && errorResponse.fields.Length > 0)
+                {
+                    foreach (ErrorField field in errorResponse.fields)
+                    {
+                        message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
+                    }
+                }
+                _logger.LogError(message);
+                throw new Exception(message);
             }
-        }
-        _availableRequests--;
-
-        _logger.LogTrace($"Sending GET request to {endpoint}");
-        var response = await _client.ExecuteAsync(request);
-        _logger.LogTrace($"Response content: {response.Content}");
-
-        var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
-        if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
-        {
-            _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
-            return JsonConvert.DeserializeObject<TResponse>(response.Content);
-        }
-
-        _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
-        if (response.Content == null)
-        {
-            throw new Exception("Response was not successful and no content was returned.");
-        }
-
-        Error errorResponse;
-        try
-        {
-            _logger.LogTrace("Serializing response content to error object");
-            errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
-        }
-        catch (JsonReaderException)
-        {
-            throw new Exception($"Failed to GET {endpoint}: {response.Content} (failed to serialize to error)");
-        }
-
-        string message = $"Failed to GET {endpoint}: {errorResponse.message} [{errorResponse.code}]";
-        if (errorResponse.fields != null && errorResponse.fields.Length > 0)
-        {
-            foreach (ErrorField field in errorResponse.fields)
+            catch (Exception e)
             {
-                message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
+                _logger.LogError($"Retry handler - {e.Message}");
+                if (i == _retriesPerRestOperation - 1)
+                {
+                    _logger.LogError($"Failed to GET {endpoint} after {_retriesPerRestOperation} retries");
+                    throw;
+                }
+                _logger.LogWarning($"Retrying GET request to {endpoint} [{i + 1}/{_retriesPerRestOperation}]");
             }
         }
-        _logger.LogError(message);
-        throw new Exception(message);
+
+        throw new Exception("Failed to GET request after all retries");
     }
     
     public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, IDictionary<string, string> query = null)
@@ -476,7 +537,15 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         where TResponse : class
     {
         _logger.LogTrace($"Setting up POST request to {endpoint}");
-        var request = new RestRequest(endpoint, Method.Post).AddJsonBody(body);
+        string jsonBody = JsonConvert.SerializeObject(body, 
+            Newtonsoft.Json.Formatting.None, 
+            new JsonSerializerSettings { 
+                NullValueHandling = NullValueHandling.Ignore,
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+        });
+        _logger.LogTrace($"Request body:\n{jsonBody}");
+        var request = new RestRequest(endpoint, Method.Post);
+        request.AddJsonBody<TRequest>(body);
 
         if (query == null)
         {
@@ -488,65 +557,114 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             _logger.LogTrace($"Adding query parameter: {param.Key}={param.Value}");
         }
 
-        UpdateRateLimits();
-        if (_availableRequests < 1)
+        for (int i = 0; i < _retriesPerRestOperation; i++)
         {
-            _logger.LogTrace("Rate limit exceeded - waiting for more requests to be available");
-            while (_availableRequests < 1)
+            try
             {
-                await Task.Delay(100);
+
                 UpdateRateLimits();
+                if (_availableRequests < 1)
+                {
+                    _logger.LogTrace("Rate limit exceeded - waiting for more requests to be available");
+                    while (_availableRequests < 1)
+                    {
+                        await Task.Delay(100);
+                        UpdateRateLimits();
+                    }
+                }
+                DecrementRateLimit();
+
+                _logger.LogTrace($"Sending POST request to {endpoint}");
+                RestResponse response;
+                try
+                {
+                    response = await _client.ExecuteAsync(request);
+                }
+                catch (HttpRequestException e)
+                {
+                    _logger.LogError($"Failed to POST {endpoint}: {e.Message}");
+                    throw;
+                }
+                _logger.LogTrace($"Response content: {response.Content}");
+
+                var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
+                if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
+                {
+                    _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
+                    return JsonConvert.DeserializeObject<TResponse>(response.Content);
+                }
+
+                _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
+                if (response.Content == null)
+                {
+                    throw new Exception("Response was not successful and no content was returned.");
+                }
+
+                Error errorResponse;
+                try
+                {
+                    _logger.LogTrace("Serializing response content to error object");
+                    errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
+                }
+                catch (JsonReaderException)
+                {
+                    throw new Exception($"Failed to POST {endpoint}: {response.Content} (failed to serialize to error)");
+                }
+
+                string message = $"Failed to POST {endpoint}: {errorResponse.message} [{errorResponse.code}]";
+                if (errorResponse.fields != null && errorResponse.fields.Length > 0)
+                {
+                    foreach (ErrorField field in errorResponse.fields)
+                    {
+                        message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
+                    }
+                }
+                _logger.LogError(message);
+                throw new Exception(message);
             }
-        }
-        _availableRequests--;
-
-        _logger.LogTrace($"Sending POST request to {endpoint}");
-        var response = await _client.ExecuteAsync(request);
-        _logger.LogTrace($"Response content: {response.Content}");
-
-        var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
-        if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
-        {
-            _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
-            return JsonConvert.DeserializeObject<TResponse>(response.Content);
-        }
-
-        _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
-        if (response.Content == null)
-        {
-            throw new Exception("Response was not successful and no content was returned.");
-        }
-
-        Error errorResponse;
-        try
-        {
-            _logger.LogTrace("Serializing response content to error object");
-            errorResponse = JsonConvert.DeserializeObject<Error>(response.Content);
-        }
-        catch (JsonReaderException)
-        {
-            throw new Exception($"Failed to POST {endpoint}: {response.Content} (failed to serialize to error)");
-        }
-
-        string message = $"Failed to POST {endpoint}: {errorResponse.message} [{errorResponse.code}]";
-        if (errorResponse.fields != null && errorResponse.fields.Length > 0)
-        {
-            foreach (ErrorField field in errorResponse.fields)
+            catch (Exception e)
             {
-                message += $"\n    - {field.message} [{errorResponse.code} {field.path}]";
+                _logger.LogError($"Retry handler - {e.Message}");
+                if (i == _retriesPerRestOperation - 1)
+                {
+                    _logger.LogError($"Failed to POST {endpoint} after {_retriesPerRestOperation} retries");
+                    throw;
+                }
+                _logger.LogWarning($"Retrying POST request to {endpoint} [{i + 1}/{_retriesPerRestOperation}]");
             }
         }
-        _logger.LogError(message);
-        throw new Exception(message);
+
+        throw new Exception("Failed to POST request after all retries");
     }
 
     private void UpdateRateLimits()
     {
-        var currentTime = DateTime.Now;
-        var secondsSinceUpdate = currentTime - _lastUpdate;
-        _lastUpdate = currentTime;
-        _availableRequests = Math.Min(_availableRequests + _maxRequestsPerMinute * secondsSinceUpdate.Seconds / 60.0, _maxRequestsPerMinute);
-        _logger.LogTrace($"Updated rate limits - {_availableRequests} requests available");
+        if (_rateLimitMutex.WaitOne(5000)) {
+            var currentTime = DateTime.Now;
+            var secondsSinceUpdate = currentTime - _lastUpdate;
+            _lastUpdate = currentTime;
+            _availableRequests = Math.Min(_availableRequests + _maxRequestsPerMinute * secondsSinceUpdate.Seconds / 60.0, _maxRequestsPerMinute);
+            _logger.LogTrace($"Updated rate limits - {_availableRequests} requests available");
+            _rateLimitMutex.ReleaseMutex();
+        }
+        else
+        {
+            _logger.LogError("Failed to acquire rate limit mutex");
+            throw new Exception("Failed to acquire rate limit mutex");
+        }
+    }
+
+    private void DecrementRateLimit()
+    {
+        if (_rateLimitMutex.WaitOne(5000)) {
+            _availableRequests--;
+            _rateLimitMutex.ReleaseMutex();
+        }
+        else
+        {
+            _logger.LogError("Failed to acquire rate limit mutex");
+            throw new Exception("Failed to acquire rate limit mutex");
+        }
     }
 
     record GoDaddySingleObject<T>(T Data);
@@ -579,3 +697,4 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         }
     }
 }
+

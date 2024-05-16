@@ -125,6 +125,8 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
         _client = client;
     }
 
+    public string StrategyName => "Enrollment";
+
     public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken)
     {
         _logger.LogDebug("NewEnrollmentStrategy - Preparing GoDaddy Certificate Order");
@@ -133,7 +135,6 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
         CertificateOrderRestRequest enrollmentRestRequest = new CertificateOrderRestRequest
         {
             Csr = request.CSR,
-            CallbackUrl = "",
             CommonName = request.CommonName,
             Contact = new Contact
             {
@@ -141,23 +142,7 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
                 JobTitle = request.JobTitle,
                 NameFirst = request.FirstName,
                 NameLast = request.LastName,
-                NameMiddle = "",
                 Phone = request.Phone,
-                Suffix = ""
-            },
-            Organization = new Organization
-            {
-                Address = new Address
-                {
-                    Address1 = request.OrganizationAddress,
-                    Address2 = "",
-                    City = request.OrganizationCity,
-                    Country = request.OrganizationCountry,
-                    PostalCode = "",
-                    State = request.OrganizationState
-                },
-                Name = request.OrganizationName,
-                Phone = request.OrganizationPhone,
             },
             Period = request.CertificateValidityInYears,
             ProductType = request.ProductType.ToString(),
@@ -165,6 +150,23 @@ public class NewEnrollmentStrategy : IEnrollmentStrategy
             SlotSize = request.SlotSize,
             SubjectAlternativeNames = request.SubjectAlternativeNames,
         };
+
+        if (!request.ProductType.ToString().Contains("DV"))
+        {
+            _logger.LogDebug("NewEnrollmentStrategy - Adding Organization Information to the Certificate Order");
+            enrollmentRestRequest.Organization = new Organization
+            {
+                Address = new Address
+                {
+                    Address1 = request.OrganizationAddress,
+                    City = request.OrganizationCity,
+                    Country = request.OrganizationCountry,
+                    State = request.OrganizationState
+                },
+                Name = request.OrganizationName,
+                Phone = request.OrganizationPhone,
+            };
+        }
 
         return await _client.Enroll(enrollmentRestRequest, cancelToken);
     }
@@ -181,6 +183,8 @@ public class ReissueEnrollmentStrategy : IEnrollmentStrategy
         _client = client;
         _certificateId = certificateId;
     }
+
+    public string StrategyName => "Reissue";
 
     public async Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken)
     {
@@ -211,6 +215,8 @@ public class RenewEnrollmentStrategy : IEnrollmentStrategy
         _client = client;
         _certificateId = certificateId;
     }
+
+    public string StrategyName => "Renewal";
 
     public Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken)
     {

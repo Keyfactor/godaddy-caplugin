@@ -27,9 +27,7 @@ public class EnrollmentRequest
     public RootCAType RootCAType;
     public string[] SubjectAlternativeNames;
     public string CommonName;
-    public Contact Contact;
     public bool IntelVPro;
-    public Organization Organization;
 
     // Enrollment Config (specified by Workflow or Enrollment Parameters)
     public int CertificateValidityInYears;
@@ -66,5 +64,6 @@ public interface IEnrollmentRequestBuilder
 
 public interface IEnrollmentStrategy
 {
+    string StrategyName { get; }
     Task<EnrollmentResult> ExecuteAsync(EnrollmentRequest request, CancellationToken cancelToken);
 }

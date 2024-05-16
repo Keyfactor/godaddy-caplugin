@@ -218,8 +218,8 @@ public class GoDaddyCAPluginTests
                 { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
             }
         };
-
         bool success = true;
+
         // Act
         try
         {
@@ -492,6 +492,65 @@ public class GoDaddyCAPluginTests
         Assert.Equal(result.Status, (int)EndEntityStatus.GENERATED);
         Assert.Equal(result.StatusMessage, $"Certificate with ID {fakeCaRequestId} has been reissued");
         Assert.Equal(result.CARequestID, fakeCaRequestId);
+    }
+
+    [IntegrationTestingFact]
+    public void GoDaddyCAPlugin_Integration_Enroll_ReturnSuccess()
+    {
+        // Arrange
+        IntegrationTestingFact env = new();
+        GoDaddyCAPluginConfig.Config config = new GoDaddyCAPluginConfig.Config()
+        {
+            ApiKey = env.ApiKey,
+            ApiSecret = env.ApiSecret,
+            BaseUrl = env.BaseApiUrl,
+            ShopperId = env.ShopperId
+        };
+
+        IAnyCAPluginConfigProvider configProvider = new FakeCaConfigProvider(config);
+        ICertificateDataReader certificateDataReader = new FakeCertificateDataReader();
+
+        GoDaddyCAPlugin plugin = new GoDaddyCAPlugin();
+        plugin.Initialize(configProvider, certificateDataReader);
+
+        BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
+
+        string subject = "CN=example.com";
+        string csrString = GenerateCSR(subject);
+        Dictionary<string, string[]> sans = new();
+
+        EnrollmentProductInfo productInfo = new EnrollmentProductInfo
+        {
+            ProductID = "DV_SSL",
+            ProductParameters = new Dictionary<string, string>
+            {
+                { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
+                { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.LastName, "Doe" },
+                { EnrollmentConfigConstants.FirstName, "John" },
+                { EnrollmentConfigConstants.Email, "john.doe@example.com" },
+                { EnrollmentConfigConstants.Phone, "123-456-7890" },
+                { EnrollmentConfigConstants.SlotSize, "5" },
+                { EnrollmentConfigConstants.OrganizationName, "Example Corp" },
+                { EnrollmentConfigConstants.OrganizationAddress, "1234 Elm Street" },
+                { EnrollmentConfigConstants.OrganizationCity, "Example City" },
+                { EnrollmentConfigConstants.OrganizationState, "EX" },
+                { EnrollmentConfigConstants.OrganizationCountry, "USA" },
+                { EnrollmentConfigConstants.OrganizationPhone, "987-654-3210" },
+                { EnrollmentConfigConstants.JurisdictionState, "EX" },
+                { EnrollmentConfigConstants.JurisdictionCountry, "USA" },
+                { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" }
+            }
+        };
+
+        RequestFormat requestFormat = RequestFormat.PKCS10;
+        EnrollmentType type = EnrollmentType.New;
+
+        // Act
+        EnrollmentResult result = plugin.Enroll(csrString, subject, sans, productInfo, requestFormat, type).Result;
+
+        // Assert
+        Assert.True(certificates.Count > 0);
     }
 
     static void ConfigureLogging()

@@ -134,7 +134,7 @@ public record CertificateOrderRestRequest
     public bool IntelVPro { get; init; }
 
     [JsonPropertyName("organization")]
-    public Organization Organization { get; init; }
+    public Organization Organization { get; set; }
 
     [JsonPropertyName("period")]
     public int Period { get; init; }
@@ -220,7 +220,7 @@ public record RevokeCertificateRestRequest(
 
 public enum RevokeReason
 {
-    AFFILIATION_CHANGED, CESSATION_OF_OPERATION, KEY_COMPROMISE, PRIVILEGE_WITHDRAWN, SUPERSEDED
+    KEY_COMPROMISE, CA_COMPROMISE, AFFILIATION_CHANGED, SUPERSEDED, CESSATION_OF_OPERATION, CERTIFICATE_HOLD, REMOVE_FROM_CRL, PRIVILEGE_WITHDRAWN, AA_COMPROMISE
 }
 
 [ApiResponse(HttpStatusCode.NoContent)] // 204 No Content

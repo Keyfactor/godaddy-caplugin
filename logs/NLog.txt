@@ -178,3 +178,7 @@
    at System.Diagnostics.EventLog.SourceExists(String source, String machineName)
    at NLog.Targets.EventLogTarget.EventLogWrapper.SourceExists(String source, String machineName)
    at NLog.Targets.EventLogTarget.CreateEventSourceIfNeeded(String fixedSource, Boolean alwaysThrowError)
+2024-05-15 10:08:15.4256 Error EventLogTarget(Name=eventLog): Error when connecting to EventLog. Source=CA Gateway in Log=Application Exception: System.PlatformNotSupportedException: EventLog access is not supported on this platform.
+   at System.Diagnostics.EventLog.SourceExists(String source, String machineName)
+   at NLog.Targets.EventLogTarget.EventLogWrapper.SourceExists(String source, String machineName)
+   at NLog.Targets.EventLogTarget.CreateEventSourceIfNeeded(String fixedSource, Boolean alwaysThrowError)

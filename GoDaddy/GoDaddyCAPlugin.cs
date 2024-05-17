@@ -211,12 +211,9 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
     {
         ValidateClient();
         
-        if (fullSync)
-        {
-            _logger.LogInformation("Performing a full CA synchronization");
-            int certificates = await Client.DownloadAllIssuedCertificates(blockingBuffer, cancelToken);
-            _logger.LogDebug($"Synchronized {certificates} certificates");
-        }
+        _logger.LogInformation("Performing a full CA synchronization");
+        int certificates = await Client.DownloadAllIssuedCertificates(blockingBuffer, cancelToken);
+        _logger.LogDebug($"Synchronized {certificates} certificates");
     }
 
     private void ValidateClient()

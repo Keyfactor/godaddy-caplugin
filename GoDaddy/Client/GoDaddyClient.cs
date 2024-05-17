@@ -611,9 +611,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 _logger.LogError(message);
                 throw new Exception(message);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.LogError($"Retry handler - {e.Message}");
                 if (i == _retriesPerRestOperation - 1)
                 {
                     _logger.LogError($"Failed to POST {endpoint} after {_retriesPerRestOperation} retries");

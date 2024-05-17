@@ -290,7 +290,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 break;
             }
 
-            _logger.LogDebug($"Waiting for certificate with ID {certificateOrder.certificateId} to be issued [{details.progress}%] ({DateTime.Now - startTime} elapsed)");
+            _logger.LogDebug($"Waiting for certificate with ID {certificateOrder.certificateId} to be issued ({DateTime.Now - startTime} elapsed)");
 
             await Task.Delay(delay);
         }

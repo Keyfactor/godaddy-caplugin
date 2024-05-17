@@ -30,7 +30,6 @@ public record CertificateDetailsRestResponse(
     Organization organization,
     int period,
     string productType,
-    int progress,
     DateTime? revokedAt,
     string rootType,
     string serialNumber,

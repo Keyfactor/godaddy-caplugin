@@ -1,0 +1,12 @@
+{
+    "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
+    "name": "godaddy-anycaplugin",
+    "status": "prototype",
+    "integration_type": "anyca-plugin",
+    "support_level": "community",
+    "link_github": false,
+    "update_catalog": false,
+    "description": "GoDaddy plugin for the AnyCA Gateway framework",
+    "gateway_framework": "1.0.0",
+    "release_dir": "godaddy-anycaplugin/bin/Release/net6.0"
+}

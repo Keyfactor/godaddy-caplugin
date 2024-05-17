@@ -1,12 +1,28 @@
 {
-    "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
-    "name": "godaddy-anycaplugin",
+    "$schema": "integration-manifest-schema.json",
+    "name": "GoDaddy AnyCA REST plugin",
     "status": "prototype",
     "integration_type": "anyca-plugin",
     "support_level": "community",
     "link_github": false,
     "update_catalog": false,
     "description": "GoDaddy plugin for the AnyCA Gateway framework",
-    "gateway_framework": "1.0.0",
-    "release_dir": "godaddy-anycaplugin/bin/Release/net6.0"
+    "gateway_framework": "24.2",
+    "release_dir": "godaddy-anycaplugin/bin/Release/net6.0",
+    "about": {
+        "carest": {
+            "product_ids": [
+                "DV_SSL",
+                "DV_WILDCARD_SSL",
+                "EV_SSL",
+                "OV_CS",
+                "OV_DS",
+                "OV_SSL",
+                "OV_WILDCARD_SSL",
+                "UCC_DV_SSL",
+                "UCC_EV_SSL",
+                "UCC_OV_SSL"
+            ]
+        }
+    }
 }

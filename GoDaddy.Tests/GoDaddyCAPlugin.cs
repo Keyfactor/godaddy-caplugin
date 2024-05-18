@@ -119,6 +119,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
@@ -158,6 +159,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
@@ -204,6 +206,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
@@ -276,6 +279,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
@@ -371,6 +375,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
@@ -469,6 +474,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },
@@ -535,6 +541,7 @@ public class GoDaddyCAPluginTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },

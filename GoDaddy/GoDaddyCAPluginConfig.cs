@@ -39,21 +39,25 @@ public class GoDaddyCAPluginConfig
 
     public static class EnrollmentConfigConstants
     {
-        public const string JobTitle = "JobTitle";
-        public const string CertificateValidityInYears = "CertificateValidityInYears";
         public const string LastName = "LastName";
         public const string FirstName = "FirstName";
         public const string Email = "Email";
         public const string Phone = "Phone";
-        public const string SlotSize = "SlotSize";
+
         public const string OrganizationName = "OrganizationName";
         public const string OrganizationAddress = "OrganizationAddress";
         public const string OrganizationCity = "OrganizationCity";
         public const string OrganizationState = "OrganizationState";
         public const string OrganizationCountry = "OrganizationCountry";
         public const string OrganizationPhone = "OrganizationPhone";
+
+        public const string JobTitle = "JobTitle";
         public const string RegistrationAgent = "RegistrationAgent";
         public const string RegistrationNumber = "RegistrationNumber";
+
+        public const string RootCAType = "RootCAType";
+        public const string SlotSize = "SlotSize";
+        public const string CertificateValidityInYears = "CertificateValidityInYears";
     }
 
     public static Dictionary<string, PropertyConfigInfo> GetPluginAnnotations()
@@ -205,6 +209,13 @@ public class GoDaddyCAPluginConfig
                 Comments = "Registration number assigned to the organization when its documents were filed for registration",
                 Hidden = false,
                 DefaultValue = "",
+                Type = "String"
+            },
+            [EnrollmentConfigConstants.RootCAType] = new PropertyConfigInfo()
+            {
+                Comments = "The certificate's root CA - Depending on certificate expiration date, SHA_1 not be allowed. Will default to SHA_2 if expiration date exceeds sha1 allowed date. Options are GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, or STARFIELD_SHA_2.",
+                Hidden = false,
+                DefaultValue = "GODADDY_SHA_2",
                 Type = "String"
             }
         };

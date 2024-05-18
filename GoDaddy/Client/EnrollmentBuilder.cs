@@ -87,6 +87,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     EnrollmentConfigConstants.LastName,
                     EnrollmentConfigConstants.Phone,
 
+                    EnrollmentConfigConstants.RootCAType,
                     EnrollmentConfigConstants.CertificateValidityInYears,
                     EnrollmentConfigConstants.SlotSize,
                 });
@@ -113,6 +114,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     EnrollmentConfigConstants.OrganizationCountry,
                     EnrollmentConfigConstants.OrganizationPhone,
 
+                    EnrollmentConfigConstants.RootCAType,
                     EnrollmentConfigConstants.CertificateValidityInYears,
                     EnrollmentConfigConstants.SlotSize,
                 });
@@ -140,6 +142,7 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     EnrollmentConfigConstants.RegistrationNumber,
                     EnrollmentConfigConstants.JobTitle,
 
+                    EnrollmentConfigConstants.RootCAType,
                     EnrollmentConfigConstants.CertificateValidityInYears,
                     EnrollmentConfigConstants.SlotSize,
                 });
@@ -180,15 +183,28 @@ public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
                     throw new ArgumentException($"Unable to parse integer value for product parameter: {parameter}");
                 }
             }
+            else if (fieldInfo.FieldType.IsEnum)
+            {
+                if (Enum.TryParse(fieldInfo.FieldType, productInfo.ProductParameters[parameter], out var enumValue))
+                {
+                    _logger.LogTrace($"{fieldInfo.Name} is an enum - setting value to {enumValue}");
+                    fieldInfo.SetValue(_theEnrollmentRequest, enumValue);
+                }
+                else
+                {
+                    _logger.LogError($"Unable to parse enum value for product parameter: {parameter} - valid values are: {string.Join(", ", Enum.GetNames(fieldInfo.FieldType))}");
+                    throw new ArgumentException($"Unable to parse enum value for product parameter: {parameter} - valid values are: {string.Join(", ", Enum.GetNames(fieldInfo.FieldType))}");
+                }
+            }
             else if (fieldInfo == null)
             {
-                _logger.LogError($"Failed to find property for product parameter: {parameter}");
-                throw new ArgumentException($"Failed to find property for product parameter: {parameter}");
+                _logger.LogError($"Failed to find field for product parameter: {parameter}");
+                throw new ArgumentException($"Failed to find field for product parameter: {parameter}");
             }
             else
             {
-                _logger.LogError($"Invalid property type for product parameter: {parameter}");
-                throw new ArgumentException($"Invalid property type for product parameter: {parameter}");
+                _logger.LogError($"Invalid field type for product parameter: {parameter}");
+                throw new ArgumentException($"Invalid field type for product parameter: {parameter}");
             }
         }
 

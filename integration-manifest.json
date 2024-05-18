@@ -22,7 +22,96 @@
                 "UCC_DV_SSL",
                 "UCC_EV_SSL",
                 "UCC_OV_SSL"
+            ],
+            "ca_plugin_config": [
+                {
+                    "name": "ApiKey",
+                    "description": "The API Key for the GoDaddy API"
+                },
+                {
+                    "name": "ApiSecret",
+                    "description": "The API Secret for the GoDaddy API"
+                },
+                {
+                    "name": "BaseUrl",
+                    "description": "The Base URL for the GoDaddy API - Usually either https://api.godaddy.com or https://api.ote-godaddy.com"
+                },
+                {
+                    "name": "ShopperId",
+                    "description": "The Shopper ID of the GoDaddy account to use for the API calls (ex: 1234567890) - has a max length of 10 digits"
+                },
+                {
+                    "name": "Enabled",
+                    "description": "Flag to Enable or Disable gateway functionality. Disabling is primarily used to allow creation of the CA prior to configuration information being available."
+                }
+            ],
+            "enrollment_config": [
+                {
+                    "name": "JobTitle",
+                    "description": "The job title of the certificate requestor"
+                },
+                {
+                    "name": "CertificateValidityInYears",
+                    "description": "Number of years the certificate will be valid for"
+                },
+                {
+                    "name": "LastName",
+                    "description": "Last name of the certificate requestor"
+                },
+                {
+                    "name": "FirstName",
+                    "description": "First name of the certificate requestor"
+                },
+                {
+                    "name": "Email",
+                    "description": "Email address of the requestor"
+                },
+                {
+                    "name": "Phone",
+                    "description": "Phone number of the requestor"
+                },
+                {
+                    "name": "SlotSize",
+                    "description": "Maximum number of SANs that a certificate may have - valid values are [FIVE, TEN, FIFTEEN, TWENTY, THIRTY, FOURTY, FIFTY, ONE_HUNDRED]"
+                },
+                {
+                    "name": "OrganizationName",
+                    "description": "Name of the organization to be validated against"
+                },
+                {
+                    "name": "OrganizationAddress",
+                    "description": "Address of the organization to be validated against"
+                },
+                {
+                    "name": "OrganizationCity",
+                    "description": "City of the organization to be validated against"
+                },
+                {
+                    "name": "OrganizationState",
+                    "description": "Full state name of the organization to be validated against"
+                },
+                {
+                    "name": "OrganizationCountry",
+                    "description": "2 character abbreviation of the country of the organization to be validated against"
+                },
+                {
+                    "name": "OrganizationPhone",
+                    "description": "Phone number of the organization to be validated against"
+                },
+                {
+                    "name": "RegistrationAgent",
+                    "description": "Registration agent name assigned to the organization when its documents were filed for registration"
+                },
+                {
+                    "name": "RegistrationNumber",
+                    "description": "Registration number assigned to the organization when its documents were filed for registration"
+                },
+                {
+                    "name": "RootCAType",
+                    "description": "The certificate's root CA - Depending on certificate expiration date, SHA_1 not be allowed. Will default to SHA_2 if expiration date exceeds sha1 allowed date. Options are GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, or STARFIELD_SHA_2."
+                }
             ]
+
         }
     }
 }

@@ -77,7 +77,7 @@ public class EnrollmentAbstractionTests
             RegistrationNumber = "123456789",
 
             // AnyGateway REST config
-            PriorCertSN = "123456789ABCDEF"
+            PriorCertSN = "123456789ABCDEF",
         };
 
         FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
@@ -258,6 +258,7 @@ public class EnrollmentAbstractionTests
             {
                 { EnrollmentConfigConstants.SlotSize, "5" },
                 { EnrollmentConfigConstants.CertificateValidityInYears, "2" },
+                { EnrollmentConfigConstants.RootCAType, "GODADDY_SHA_2" },
                 // DV
                 { EnrollmentConfigConstants.LastName, "Doe" },
                 { EnrollmentConfigConstants.FirstName, "John" },

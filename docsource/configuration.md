@@ -1,6 +1,6 @@
 ## Overview
 
-The GoDaddy AnyCA REST plugin extends the capabilities of the [GoDaddy Certificate Authority (CA)](https://www.godaddy.com/web-security/ssl-certificate) to Keyfactor Command via the Keyfactor AnyCA REST Gateway. The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
+The GoDaddy AnyCA REST plugin extends the capabilities of the [GoDaddy Certificate Authority (CA)](https://www.godaddy.com/web-security/ssl-certificate) to Keyfactor Command via the Keyfactor . The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
 * CA Sync:
     * Download all certificates issued to the customer by the GoDaddy CA.
 * Certificate enrollment for all published GoDaddy Certificate SKUs:
@@ -14,7 +14,7 @@ The GoDaddy AnyCA REST plugin extends the capabilities of the [GoDaddy Certifica
 
 1. **GoDaddy Account**
    
-    To use the GoDaddy AnyCA REST plugin, a production GoDaddy account must be created and fully configured. To create a new account, follow [GoDaddy's official documentation](https://www.godaddy.com/help/create-a-godaddy-account-16618). Make sure that your [account Profile is fully configured](https://www.godaddy.com/help/update-my-godaddy-account-profile-27250) with at least the following fields:
+    To use the GoDaddy AnyCA REST plugin, a production GoDaddy account must be created and configured fully. To create a new account, follow [GoDaddy's official documentation](https://www.godaddy.com/help/create-a-godaddy-account-16618). Make sure that your [account Profile is configured fully](https://www.godaddy.com/help/update-my-godaddy-account-profile-27250) with at least the following fields:
     * Full Name
     * Address
     * Organization
@@ -29,7 +29,7 @@ The GoDaddy AnyCA REST plugin extends the capabilities of the [GoDaddy Certifica
 
 3. **GoDaddy API Key**
 
-    The GoDaddy AnyCA REST plugin uses the [GoDaddy API](https://developer.godaddy.com/doc/endpoint/certificates) to perform all certificate operations. GoDaddy offers an environment for testing (OTE) and an environment for production use (Production). To configure the plugin, follow the [official GoDaddy documentation](https://developer.godaddy.com/getstarted) to create a [production API key](https://developer.godaddy.com/keys). To configure the AnyCA REST Gateway, you'll need the following parameters handy:
+    The GoDaddy AnyCA REST plugin uses the [GoDaddy API](https://developer.godaddy.com/doc/endpoint/certificates) to perform all certificate operations. GoDaddy offers an environment for testing (OTE) and an environment for production use (Production). To configure the plugin, follow the [official GoDaddy documentation](https://developer.godaddy.com/getstarted) to create a [production API key](https://developer.godaddy.com/keys). To configure the , you'll need the following parameters handy:
 
     * API URL (https://api.godaddy.com or https://api.ote-godaddy.com)
     * API Key
@@ -38,3 +38,22 @@ The GoDaddy AnyCA REST plugin extends the capabilities of the [GoDaddy Certifica
 4. **GoDaddy Shopper ID**
 
     To synchronize certificates issued by the GoDaddy CA, the GoDaddy AnyCA REST plugin needs to know your Shopper ID (shown as Customer # on the GoDaddy website). The Shopper ID is a number with a max length of 10 (e.g., 1234567890). To find your Shopper ID, sign into [GoDaddy](https://www.godaddy.com/) and click on your name dropdown on the top right. The Shopper ID is shown as **Customer #** in this dropdown.
+
+## Gateway Registration
+
+GoDaddy has four available Certificate Authorities:
+
+- GoDaddy SHA-1 (GODADDY_SHA_1)
+  - [Root Certificate](https://certs.godaddy.com/repository/gd-class2-root.crt) 
+  - [Intermediate Certificate](https://certs.godaddy.com/repository/gd_intermediate.crt.pem)
+- GoDaddy SHA256 (GODADDY_SHA_2)
+  - [Root Certificate](https://certs.godaddy.com/repository/gdroot-g2.crt) 
+  - [Intermediate Certificate](https://certs.godaddy.com/repository/gdig2.crt.pem)
+- Starfield SHA-1 (STARFIELD_SHA_1)
+  - [Root Certificate](https://certs.godaddy.com/repository/sf-class2-root.crt) 
+  - [Intermediate Certificate](https://certs.godaddy.com/repository/sf_intermediate.crt.pem)
+- Starfield SHA256 (STARFIELD_SHA_2)
+  - [Root Certificate](https://certs.godaddy.com/repository/sfroot-g2.crt) 
+  - [Intermediate Certificate](https://certs.godaddy.com/repository/sfig2.crt.pem)
+
+Each defined Certificate Authority in the AnyCA REST can support one certificate authority. Since GoDaddy has four available Certificate Authorities, if you require certificate enrollment from multiple GoDaddy Certificate Authorities, you must define multiple Certificate Authorities in the AnyCA Gateway REST. This will manifest in Command as one GoDaddy CA per defined Certificate Authority.

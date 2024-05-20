@@ -310,7 +310,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             CARequestID = certificateOrder.certificateId,
             Certificate = certificatePemString,
             Status = GoDaddyCertificateStatusToCAStatus(details.status),
-            StatusMessage = $"Certificate with ID {certificateOrder.certificateId} has been issued"
+            StatusMessage = $"Certificate with ID {certificateOrder.certificateId} has been issued",
         };
     }
 

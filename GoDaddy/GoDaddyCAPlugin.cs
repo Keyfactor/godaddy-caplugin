@@ -42,9 +42,6 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
                 .WithConfigProvider(configProvider)
                 .Build();
 
-            if (builder.IsGoDaddyPluginEnabled()) Client.Enable();
-            else Client.Disable();
-
             _logger.LogDebug("Created GoDaddy API Client");
         }
         else
@@ -66,8 +63,6 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
                 .WithConnectionInformation(connectionInfo)
                 .Build();
 
-            if (builder.IsGoDaddyPluginEnabled()) await Client.Enable();
-            else await Client.Disable();
             _logger.LogDebug("Created GoDaddy API Client");
         }
         else

@@ -81,13 +81,11 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
         return this;
     }
 
-    public bool IsGoDaddyPluginEnabled()
-    {
-        return _enabled;
-    }
-
     public IGoDaddyClient Build()
     {
-        return _builder.Build();
+        IGoDaddyClient client = _builder.Build();
+        if (_enabled) client.Enable();
+        else client.Disable();
+        return client;
     }
 }

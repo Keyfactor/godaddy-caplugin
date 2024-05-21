@@ -514,6 +514,12 @@ public class GoDaddyCAPluginTests
     {
         // Arrange
         IntegrationTestingFact env = new();
+        if (!env.BaseApiUrl.Contains("ote"))
+        {
+            _logger.LogWarning("Enrollment integration test should be run against the GoDaddy OT&E environment.");
+            return;
+        }
+
         GoDaddyCAPluginConfig.Config config = new GoDaddyCAPluginConfig.Config()
         {
             ApiKey = env.ApiKey,

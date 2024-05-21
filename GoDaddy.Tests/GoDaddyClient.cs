@@ -53,6 +53,33 @@ public class ClientTests
     }
 
     [IntegrationTestingFact]
+    public void GoDaddyClient_Integration_RateLimiter_ReturnSuccess()
+    {
+        // Arrange
+        IntegrationTestingFact env = new();
+
+        IGoDaddyClient client = new GoDaddyClient.Builder()
+            .WithBaseUrl(env.BaseApiUrl)
+            .WithApiKey(env.ApiKey)
+            .WithApiSecret(env.ApiSecret)
+            .WithShopperId(env.ShopperId)
+            .Build();
+
+        // Act
+        
+        List<Task> tasks = new();
+        for (int i = 0; i < 100; i++)
+        {
+            _logger.LogDebug($"Request number: {i + 1}");
+            tasks.Add(client.Ping());
+        }
+        foreach (var task in tasks)
+        {
+            task.Wait();
+        }
+    }
+
+    [IntegrationTestingFact]
     public void GoDaddyClient_Integration_GetCertificateDetails_ReturnSuccess()
     {
         // Arrange

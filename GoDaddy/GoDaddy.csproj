@@ -3,11 +3,9 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>disable</ImplicitUsings>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <RootNamespace>GoDaddy</RootNamespace>
-        <AssemblyName>GoDaddy</AssemblyName>
+        <RootNamespace>Keyfactor.Extensions.CAPlugin.GoDaddy</RootNamespace>
+        <AssemblyName>GoDaddyCAPlugin</AssemblyName>
     </PropertyGroup>
     
     <ItemGroup>

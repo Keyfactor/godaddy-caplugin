@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 public class EnrollmentRequest
 {

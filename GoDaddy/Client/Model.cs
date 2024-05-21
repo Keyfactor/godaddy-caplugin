@@ -16,7 +16,7 @@ using System;
 using System.Net;
 using System.Text.Json.Serialization;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 // GET /v1/certificates/{certificateId}
 

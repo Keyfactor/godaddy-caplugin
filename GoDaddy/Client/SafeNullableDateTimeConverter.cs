@@ -18,7 +18,7 @@ using System.Text.Json.Serialization;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 public class SafeNullableDateTimeConverter : JsonConverter<DateTime?>
 {

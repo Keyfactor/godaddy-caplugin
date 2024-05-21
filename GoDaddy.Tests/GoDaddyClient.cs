@@ -13,13 +13,13 @@
 // limitations under the License.
 
 using System.Collections.Concurrent;
-using GoDaddy.Client;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class ClientTests
 {
@@ -45,6 +45,8 @@ public class ClientTests
             .WithShopperId(env.ShopperId)
             .Build();
 
+        client.Enable();
+
         BlockingCollection<AnyCAPluginCertificate> certificates = new();
 
         // Act
@@ -64,6 +66,8 @@ public class ClientTests
             .WithApiSecret(env.ApiSecret)
             .WithShopperId(env.ShopperId)
             .Build();
+
+        client.Enable();
 
         // Act
         
@@ -91,6 +95,8 @@ public class ClientTests
             .WithApiSecret(env.ApiSecret)
             .WithShopperId(env.ShopperId)
             .Build();
+
+        client.Enable();
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new();
 

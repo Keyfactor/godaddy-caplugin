@@ -15,7 +15,7 @@
 using System.Collections.Generic;
 using Keyfactor.AnyGateway.Extensions;
 
-namespace GoDaddy;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy;
 
 public class GoDaddyCAPluginConfig
 {

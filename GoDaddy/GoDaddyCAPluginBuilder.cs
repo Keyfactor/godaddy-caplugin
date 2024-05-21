@@ -13,13 +13,13 @@
 // limitations under the License.
 
 using System.Collections.Generic;
-using GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace GoDaddy;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy;
 
 public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBuilder, new()
 {
@@ -29,7 +29,7 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
 
     public GoDaddyCAPluginBuilder<TBuilder> WithConfigProvider(IAnyCAPluginConfigProvider configProvider)
     {
-        _logger.LogDebug($"Builder - Setting values from Any CA Plugin Config Provider: {JsonConvert.SerializeObject(configProvider)}");
+        _logger.LogDebug($"Builder - Setting values from Any CA Plugin Config Provider");
 
         string rawConfig = JsonConvert.SerializeObject(configProvider.CAConnectionData);
         GoDaddyCAPluginConfig.Config properties = JsonConvert.DeserializeObject<GoDaddyCAPluginConfig.Config>(rawConfig);
@@ -53,7 +53,7 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
 
     public GoDaddyCAPluginBuilder<TBuilder> WithConnectionInformation(Dictionary<string, object> connectionInfo)
     {
-        _logger.LogDebug($"Builder - Setting values from Connection Info: {JsonConvert.SerializeObject(connectionInfo)}");
+        _logger.LogDebug($"Builder - Setting values from Connection Info");
 
         string rawConfig = JsonConvert.SerializeObject(connectionInfo);
         GoDaddyCAPluginConfig.Config properties = JsonConvert.DeserializeObject<GoDaddyCAPluginConfig.Config>(rawConfig);

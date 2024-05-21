@@ -15,13 +15,13 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using GoDaddy.Client;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class FakeGoDaddyClient : IGoDaddyClient
 {

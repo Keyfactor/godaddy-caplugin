@@ -29,7 +29,7 @@ using RestSharp;
 using RestSharp.Authenticators;
 using RestSharp.Serializers.Json;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 public class GoDaddyAuthenticator : AuthenticatorBase {
     readonly string _baseUrl;

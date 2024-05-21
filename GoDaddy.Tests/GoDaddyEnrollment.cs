@@ -15,15 +15,15 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using GoDaddy.Client;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NLog.Extensions.Logging;
-using static GoDaddy.GoDaddyCAPluginConfig;
+using static Keyfactor.Extensions.CAPlugin.GoDaddy.GoDaddyCAPluginConfig;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class EnrollmentAbstractionTests
 {

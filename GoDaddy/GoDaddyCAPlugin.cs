@@ -28,7 +28,6 @@ namespace GoDaddy;
 public class GoDaddyCAPlugin : IAnyCAPlugin
 {
     public IGoDaddyClient Client { get; set; }
-    bool _enabled;
     ILogger _logger = LogHandler.GetClassLogger<GoDaddyCAPlugin>();
     ICertificateDataReader _certificateDataReader;
 
@@ -43,12 +42,14 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
                 .WithConfigProvider(configProvider)
                 .Build();
 
-            _enabled = builder.IsGoDaddyPluginEnabled();
+            if (builder.IsGoDaddyPluginEnabled()) Client.Enable();
+            else Client.Disable();
+
             _logger.LogDebug("Created GoDaddy API Client");
         }
         else
         {
-            _enabled = true;
+            _logger.LogDebug("GoDaddy API Client already initialized");
         }
 
         _certificateDataReader = certificateDataReader;
@@ -65,12 +66,13 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
                 .WithConnectionInformation(connectionInfo)
                 .Build();
 
-            _enabled = builder.IsGoDaddyPluginEnabled();
+            if (builder.IsGoDaddyPluginEnabled()) await Client.Enable();
+            else await Client.Disable();
             _logger.LogDebug("Created GoDaddy API Client");
         }
         else
         {
-            _enabled = true;
+            _logger.LogDebug("GoDaddy API Client already initialized");
         }
 
         await Ping();
@@ -86,7 +88,7 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
 
     public async Task Ping()
     {
-        if (!_enabled)
+        if (!Client.IsEnabled())
         {
             _logger.LogDebug("GoDaddyCAPlugin is disabled. Skipping Ping");
             return;

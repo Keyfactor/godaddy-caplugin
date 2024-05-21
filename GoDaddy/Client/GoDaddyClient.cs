@@ -51,6 +51,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
     private ILogger _logger;
     readonly RestClient _client;
 
+    bool _clientIsEnabled;
+
     RateLimiter rateLimiter = new RateLimiter(60);
 
     private static int _retriesPerRestOperation = 3;
@@ -118,10 +120,37 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         );
 
         this._shopperId = shopperId;
+        this._clientIsEnabled = true;
+    }
+
+    public Task Enable()
+    {
+        if (!_clientIsEnabled)
+        {
+            _logger.LogDebug("Enabling GoDaddy API client");
+            _clientIsEnabled = true;
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task Disable()
+    {
+        if (_clientIsEnabled)
+        {
+            _logger.LogDebug("Disabling GoDaddy API client");
+            _clientIsEnabled = false;
+        }
+        return Task.CompletedTask;
+    }
+
+    public bool IsEnabled()
+    {
+        return _clientIsEnabled;
     }
 
     public async Task Ping()
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug("Validating GoDaddy API connection");
 
         string path = $"/v1/shoppers/{_shopperId}";
@@ -142,6 +171,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
     }
 
     private string GetCustomerId() {
+        EnsureClientIsEnabled();
         if (string.IsNullOrEmpty(_shopperId)) {
             _logger.LogError("Shopper ID is required to get customer ID");
             throw new ArgumentNullException(nameof(_shopperId));
@@ -160,12 +190,14 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         };
 
         ShopperDetailsRestResponse shopper = GetAsync<ShopperDetailsRestResponse>(path, query).Result;
+
         _logger.LogTrace($"Customer ID for shopper ID {_shopperId} is {shopper.customerId}");
         _customerId = shopper.customerId;
         return _customerId;
     }
 
     public async Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId) {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Downloading certificate with ID: {certificateId}");
 
         string path = $"/v1/certificates/{certificateId}/download";
@@ -184,6 +216,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
     }
     
     public async Task<string> DownloadCertificatePem(string certificateId) {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Downloading certificate with ID: {certificateId}");
 
         string path = $"/v1/certificates/{certificateId}/download";
@@ -194,6 +227,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task<CertificateDetailsRestResponse> GetCertificateDetails(string certificateId)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Getting certificate details for certificate ID: {certificateId}");
 
         string path = $"/v1/certificates/{certificateId}";
@@ -206,6 +240,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task<int> DownloadAllIssuedCertificates(BlockingCollection<AnyCAPluginCertificate> certificatesBuffer, CancellationToken cancelToken)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug("Getting all issued certificates");
 
         string path = $"/v2/customers/{GetCustomerId()}/certificates";
@@ -265,6 +300,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task<EnrollmentResult> Enroll(CertificateOrderRestRequest request, CancellationToken cancelToken)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Enrolling CSR with common name {request.CommonName}");
 
         string path = $"/v1/certificates";
@@ -325,6 +361,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task<EnrollmentResult> Reissue(string certificateId, ReissueCertificateRestRequest request, CancellationToken cancelToken)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Reissuing certificate with ID {certificateId}");
 
         string path = $"/v1/certificates/{certificateId}/reissue";
@@ -385,6 +422,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task<EnrollmentResult> Renew(string certificateId, RenewCertificateRestRequest request, CancellationToken cancelToken)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Renewing certificate with ID {certificateId}");
 
         string path = $"v1/certificates/{certificateId}/renew";
@@ -439,6 +477,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task RevokeCertificate(string certificateId, RevokeReason reason)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Revoking certificate with ID {certificateId} [reason: {reason.ToString()}]");
 
         RevokeCertificateRestRequest request = new RevokeCertificateRestRequest(reason.ToString());
@@ -449,6 +488,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     public async Task CancelCertificateOrder(string certificateId)
     {
+        EnsureClientIsEnabled();
         _logger.LogDebug($"Cancelling certificate order with ID {certificateId}");
 
         CancelCertificateOrderRestRequest request = new CancelCertificateOrderRestRequest();
@@ -461,6 +501,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
     public async Task<TResponse> GetAsync<TResponse>(string endpoint, IDictionary<string, string> query = null)
         where TResponse : class
     {
+        EnsureClientIsEnabled();
+
         _logger.LogTrace($"Setting up GET request to {endpoint}");
         var request = new RestRequest(endpoint, Method.Get);
 
@@ -552,6 +594,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         where TRequest : class
         where TResponse : class
     {
+        EnsureClientIsEnabled();
+
         _logger.LogTrace($"Setting up POST request to {endpoint}");
         var request = new RestRequest(endpoint, Method.Post);
         request.AddJsonBody<TRequest>(body);
@@ -642,6 +686,15 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         }
 
         throw new Exception("Failed to POST request after all retries");
+    }
+
+    private void EnsureClientIsEnabled()
+    {
+        if (!_clientIsEnabled)
+        {
+            _logger.LogWarning("GoDaddy API client is disabled - throwing");
+            throw new Exception("GoDaddy API client is disabled");
+        }
     }
 
     record GoDaddySingleObject<T>(T Data);

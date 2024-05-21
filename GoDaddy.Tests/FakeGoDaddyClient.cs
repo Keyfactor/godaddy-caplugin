@@ -77,6 +77,25 @@ public class FakeGoDaddyClient : IGoDaddyClient
     public DateTime EnrollmentNotBefore;
     public DateTime EnrollmentNotAfter;
 
+    bool _fakeClientIsEnabled = true;
+
+    public Task Enable()
+    {
+        _fakeClientIsEnabled = true;
+        return Task.CompletedTask;
+    }
+
+    public Task Disable()
+    {
+        _fakeClientIsEnabled = false;
+        return Task.CompletedTask;
+    }
+
+    public bool IsEnabled()
+    {
+        return _fakeClientIsEnabled;
+    }
+
     public Task Ping()
     {
         return Task.CompletedTask;

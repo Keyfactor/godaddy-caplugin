@@ -135,16 +135,18 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(_certificateDataReader, Client);
         IEnrollmentStrategy strategy = await factory.GetStrategy(request);
 
-        CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(_certificateIssuanceTimeoutSeconds));
-        CancellationToken token = tokenSource.Token;
-        try
+        using (CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(_certificateIssuanceTimeoutSeconds)))
         {
-            return await strategy.ExecuteAsync(request, token);
-        }
-        catch (TaskCanceledException ex)
-        {
-            _logger.LogWarning("Enrollment task was cancelled: " + ex.Message);
-            return null;
+            CancellationToken token = tokenSource.Token;
+            try
+            {
+                return await strategy.ExecuteAsync(request, token);
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogWarning("Enrollment task was cancelled: " + ex.Message);
+                return null;
+            }
         }
     }
 

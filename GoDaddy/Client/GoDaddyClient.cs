@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -483,7 +484,12 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 var response = await _client.ExecuteAsync(request);
 
                 var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
-                if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
+                if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode && response.StatusCode == HttpStatusCode.NoContent)
+                {
+                    _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - skipping serialization to {typeof(TResponse).ToString()}");
+                    return Activator.CreateInstance<TResponse>();
+                }
+                else if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
                 {
                     _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
                     return JsonSerializer.Deserialize<TResponse>(response.Content);
@@ -493,6 +499,11 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 if (response.Content == null)
                 {
                     throw new Exception("Response was not successful and no content was returned.");
+                }
+
+                if (!string.IsNullOrEmpty(response.Content))
+                {
+                    _logger.LogTrace($"Error content: {response.Content}");
                 }
 
                 Error errorResponse;
@@ -574,7 +585,12 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 }
 
                 var expectedResponseCodeAttribute = (ApiResponseAttribute)Attribute.GetCustomAttribute(typeof(TResponse), typeof(ApiResponseAttribute));
-                if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
+                if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode && response.StatusCode == HttpStatusCode.NoContent)
+                {
+                    _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - skipping serialization to {typeof(TResponse).ToString()}");
+                    return Activator.CreateInstance<TResponse>();
+                }
+                else if (expectedResponseCodeAttribute != null && response.StatusCode == expectedResponseCodeAttribute.StatusCode)
                 {
                     _logger.LogTrace($"Received response with expected status code [{response.StatusCode}] - serializing response content to {typeof(TResponse).ToString()}");
                     return JsonSerializer.Deserialize<TResponse>(response.Content);
@@ -583,7 +599,13 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
                 if (response.Content == null)
                 {
+                    _logger.LogError($"Response was not successful and no content was returned.");
                     throw new Exception("Response was not successful and no content was returned.");
+                }
+
+                if (!string.IsNullOrEmpty(response.Content))
+                {
+                    _logger.LogTrace($"Error content: {response.Content}");
                 }
 
                 Error errorResponse;
@@ -600,6 +622,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 }
                 catch (JsonException)
                 {
+                    _logger.LogError($"Failed to POST {endpoint}: {response.Content} (failed to serialize to error)");
                     throw new Exception($"Failed to GET {endpoint}: {response.Content} (failed to serialize to error)");
                 }
 

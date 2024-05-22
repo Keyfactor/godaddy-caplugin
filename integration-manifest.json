@@ -8,7 +8,7 @@
     "link_github": false,
     "update_catalog": false,
     "gateway_framework": "24.2",
-    "release_dir": "GoDaddy\\bin\\Release",
+    "release_dir": "GoDaddy/bin/Release/net6.0",
     "about": {
         "carest": {
             "product_ids": [
@@ -111,7 +111,6 @@
                     "description": "The certificate's root CA - Depending on certificate expiration date, SHA_1 not be allowed. Will default to SHA_2 if expiration date exceeds sha1 allowed date. Options are GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, or STARFIELD_SHA_2."
                 }
             ]
-
         }
     }
 }

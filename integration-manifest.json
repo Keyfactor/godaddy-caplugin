@@ -11,18 +11,6 @@
     "release_dir": "GoDaddy/bin/Release/net6.0",
     "about": {
         "carest": {
-            "product_ids": [
-                "DV_SSL",
-                "DV_WILDCARD_SSL",
-                "EV_SSL",
-                "OV_CS",
-                "OV_DS",
-                "OV_SSL",
-                "OV_WILDCARD_SSL",
-                "UCC_DV_SSL",
-                "UCC_EV_SSL",
-                "UCC_OV_SSL"
-            ],
             "ca_plugin_config": [
                 {
                     "name": "ApiKey",
@@ -110,6 +98,18 @@
                     "name": "RootCAType",
                     "description": "The certificate's root CA - Depending on certificate expiration date, SHA_1 not be allowed. Will default to SHA_2 if expiration date exceeds sha1 allowed date. Options are GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, or STARFIELD_SHA_2."
                 }
+            ],
+            "product_ids": [
+                "DV_SSL",
+                "DV_WILDCARD_SSL",
+                "EV_SSL",
+                "OV_CS",
+                "OV_DS",
+                "OV_SSL",
+                "OV_WILDCARD_SSL",
+                "UCC_DV_SSL",
+                "UCC_EV_SSL",
+                "UCC_OV_SSL"
             ]
         }
     }

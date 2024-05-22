@@ -74,10 +74,3 @@ GoDaddy has four available Certificate Authorities:
 
 Each defined Certificate Authority in the AnyCA Gateway REST can support one issuing certificate authority. Since GoDaddy has four available Certificate Authorities, if you require certificate enrollment from multiple GoDaddy Certificate Authorities, you must define multiple Certificate Authorities in the AnyCA Gateway REST. This will manifest in Command as one GoDaddy CA per defined Certificate Authority.
 
-## Certificate Template Creation Step
-
-alksdfjalksdjflkasdj
-
-## Mechanics
-
-asdlkfj

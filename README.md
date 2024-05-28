@@ -58,7 +58,7 @@ GoDaddy AnyCA REST plugin is open source and community supported, meaning that t
 </p>
 
 
-The GoDaddy AnyCA Gateway REST plugin extends the capabilities of the [GoDaddy Certificate Authority (CA)](https://www.godaddy.com/web-security/ssl-certificate) to Keyfactor Command via the Keyfactor . The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
+The GoDaddy AnyCA Gateway REST plugin extends the capabilities of the [GoDaddy Certificate Authority (CA)](https://www.godaddy.com/web-security/ssl-certificate) to Keyfactor Command via the Keyfactor AnyCA Gateway REST. The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
 * CA Sync:
     * Download all certificates issued to the customer by the GoDaddy CA.
 * Certificate enrollment for all published GoDaddy Certificate SKUs:

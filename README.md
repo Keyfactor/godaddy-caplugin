@@ -3,7 +3,7 @@
 
 GoDaddy plugin for the AnyCA Gateway framework
 
-#### Integration status: Prototype - Demonstration quality. Not for use in customer environments.
+#### Integration status: Production - Ready for use in production environments.
 
 ## About the Keyfactor 
 

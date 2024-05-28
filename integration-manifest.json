@@ -2,7 +2,7 @@
     "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
     "name": "GoDaddy AnyCA REST plugin",
     "description": "GoDaddy plugin for the AnyCA Gateway framework",
-    "status": "prototype",
+    "status": "production",
     "integration_type": "anyca-plugin",
     "support_level": "community",
     "link_github": false,

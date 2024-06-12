@@ -4,9 +4,9 @@
     "description": "GoDaddy plugin for the AnyCA Gateway framework",
     "status": "production",
     "integration_type": "anyca-plugin",
-    "support_level": "community",
-    "link_github": false,
-    "update_catalog": false,
+    "support_level": "kf-supported",
+    "link_github": true,
+    "update_catalog": true,
     "gateway_framework": "24.2",
     "release_dir": "GoDaddy/bin/Release/net6.0",
     "about": {

@@ -17,18 +17,17 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 
-namespace GoDaddy;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy;
 
 public class GoDaddyCAPlugin : IAnyCAPlugin
 {
     public IGoDaddyClient Client { get; set; }
-    bool _enabled;
     ILogger _logger = LogHandler.GetClassLogger<GoDaddyCAPlugin>();
     ICertificateDataReader _certificateDataReader;
 
@@ -43,12 +42,11 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
                 .WithConfigProvider(configProvider)
                 .Build();
 
-            _enabled = builder.IsGoDaddyPluginEnabled();
             _logger.LogDebug("Created GoDaddy API Client");
         }
         else
         {
-            _enabled = true;
+            _logger.LogDebug("GoDaddy API Client already initialized");
         }
 
         _certificateDataReader = certificateDataReader;
@@ -65,12 +63,11 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
                 .WithConnectionInformation(connectionInfo)
                 .Build();
 
-            _enabled = builder.IsGoDaddyPluginEnabled();
             _logger.LogDebug("Created GoDaddy API Client");
         }
         else
         {
-            _enabled = true;
+            _logger.LogDebug("GoDaddy API Client already initialized");
         }
 
         await Ping();
@@ -86,7 +83,7 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
 
     public async Task Ping()
     {
-        if (!_enabled)
+        if (!Client.IsEnabled())
         {
             _logger.LogDebug("GoDaddyCAPlugin is disabled. Skipping Ping");
             return;
@@ -135,16 +132,18 @@ public class GoDaddyCAPlugin : IAnyCAPlugin
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(_certificateDataReader, Client);
         IEnrollmentStrategy strategy = await factory.GetStrategy(request);
 
-        CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(_certificateIssuanceTimeoutSeconds));
-        CancellationToken token = tokenSource.Token;
-        try
+        using (CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(_certificateIssuanceTimeoutSeconds)))
         {
-            return await strategy.ExecuteAsync(request, token);
-        }
-        catch (TaskCanceledException ex)
-        {
-            _logger.LogWarning("Enrollment task was cancelled: " + ex.Message);
-            return null;
+            CancellationToken token = tokenSource.Token;
+            try
+            {
+                return await strategy.ExecuteAsync(request, token);
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogWarning("Enrollment task was cancelled: " + ex.Message);
+                return null;
+            }
         }
     }
 

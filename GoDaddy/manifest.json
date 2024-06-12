@@ -2,8 +2,8 @@
     "extensions": {  
         "Keyfactor.AnyGateway.Extensions.IAnyCAPlugin": {  
             "GoDaddyCAPlugin": {  
-                "assemblypath": "GoDaddy.dll",  
-                "TypeFullName": "GoDaddy.GoDaddyCAPlugin"  
+                "assemblypath": "GoDaddyCAPlugin.dll",  
+                "TypeFullName": "Keyfactor.Extensions.CAPlugin.GoDaddy.GoDaddyCAPlugin"  
             }  
         }  
     }  

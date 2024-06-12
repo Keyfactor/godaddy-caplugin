@@ -15,8 +15,9 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Extensions.CAPlugin.GoDaddy;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class FakeCaConfigProvider : IAnyCAPluginConfigProvider
 {
@@ -36,7 +37,8 @@ public class FakeCaConfigProvider : IAnyCAPluginConfigProvider
                 { GoDaddyCAPluginConfig.ConfigConstants.ApiKey, Config.ApiKey },
                 { GoDaddyCAPluginConfig.ConfigConstants.ApiSecret, Config.ApiSecret },
                 { GoDaddyCAPluginConfig.ConfigConstants.BaseUrl, Config.BaseUrl },
-                { GoDaddyCAPluginConfig.ConfigConstants.ShopperId, Config.ShopperId }
+                { GoDaddyCAPluginConfig.ConfigConstants.ShopperId, Config.ShopperId },
+                { GoDaddyCAPluginConfig.ConfigConstants.Enabled , Config.Enabled },
             };
         }
     }

@@ -15,13 +15,13 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using GoDaddy.Client;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class FakeGoDaddyClient : IGoDaddyClient
 {
@@ -76,6 +76,25 @@ public class FakeGoDaddyClient : IGoDaddyClient
 
     public DateTime EnrollmentNotBefore;
     public DateTime EnrollmentNotAfter;
+
+    bool _fakeClientIsEnabled = true;
+
+    public Task Enable()
+    {
+        _fakeClientIsEnabled = true;
+        return Task.CompletedTask;
+    }
+
+    public Task Disable()
+    {
+        _fakeClientIsEnabled = false;
+        return Task.CompletedTask;
+    }
+
+    public bool IsEnabled()
+    {
+        return _fakeClientIsEnabled;
+    }
 
     public Task Ping()
     {

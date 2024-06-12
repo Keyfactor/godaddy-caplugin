@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Keyfactor.AnyGateway.Extensions;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 public interface IGoDaddyClientBuilder
 {
@@ -31,6 +31,9 @@ public interface IGoDaddyClientBuilder
 public interface IGoDaddyClient
 {
     Task Ping();
+    Task Enable();
+    Task Disable();
+    bool IsEnabled();
     Task<CertificateDetailsRestResponse> GetCertificateDetails(string certificateId);
     Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId);
     Task<string> DownloadCertificatePem(string certificateId);

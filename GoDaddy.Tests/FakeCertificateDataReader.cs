@@ -15,7 +15,7 @@
 using System.Security.Cryptography.X509Certificates;
 using Keyfactor.AnyGateway.Extensions;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class FakeCertificateDataReader : ICertificateDataReader
 {

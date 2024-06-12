@@ -1,5 +1,5 @@
 <h1 align="center" style="border-bottom: none">
-    GoDaddy AnyCA Gateway Plugin
+    GoDaddy AnyCA Gateway REST Plugin
 </h1>
 
 <p align="center">
@@ -16,6 +16,10 @@
     <b>Support</b>
   </a> 
   ·
+  <a href="#requirements">
+    <b>Requirements</b>
+  </a>
+  ·
   <a href="#installation">
     <b>Installation</b>
   </a>
@@ -30,24 +34,40 @@
 </p>
 
 
-The GoDaddy AnyCA REST plugin extends the capabilities of the [GoDaddy Certificate Authority (CA)](https://www.godaddy.com/web-security/ssl-certificate) to Keyfactor Command via the Keyfactor . The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
+The GoDaddy AnyCA Gateway REST plugin extends the capabilities of the [GoDaddy Certificate Authority (CA)](https://www.godaddy.com/web-security/ssl-certificate) to Keyfactor Command via the Keyfactor AnyCA Gateway REST. The plugin represents a fully featured AnyCA REST Plugin with the following capabilies:
 * CA Sync:
     * Download all certificates issued to the customer by the GoDaddy CA.
 * Certificate enrollment for all published GoDaddy Certificate SKUs:
-    * Support certificate enrollment (new keys/certificate).
+    * Support certificate enrollment (new keys/certificate). [see disclaimer]
     * Support certificate renewal (extend the life of a previously issued certificate with the same or different domain names).
     * Support certificate re-issuance (new public/private keys with the same or different domain names).
 * Certificate revocation:
     * Request revocation of a previously issued certificate.
 
+> **🚧 Disclaimer** 
+>
+> Prior to Keyfactor Command v12.3, the GoDaddy AnyCA Gateway REST plugin has limited Certificate Enrollment functionality.
+>
+> <details><summary>Notes</summary>
+> The GoDaddy AnyCA Gateway REST plugin requires several custom enrollment parameters that are passed to GoDaddy upon the submission of a new PFX/CSR enrollment request. These custom enrollment parameters configure the domain/organization/extended validation procedure required to complete the certificate enrollment.
+>
+> Prior to Command v12.3, custom enrollment parameters are not supported on a per-request basis for PFX/CSR Enrollment. If your Keyfactor Command version is less than v12.3, the only way to configure custom enrollment parameters is to set default parameter values on the Certificate Template in the Keyfactor AnyCA Gateway REST. 
+>
+> Before continuing with installation prior to Command 12.3, users should consider the following:
+>
+> * Each combination of custom enrollment parameters will require the creation of a new Certificate Template and Certificate Profile in the Keyfactor AnyCA Gateway REST. 
+> * If you have multiple combinations of custom enrollment parameters, consider the operational complexity of managing multiple Certificate Templates and Certificate Profiles.
+> * If your certificate workflows mostly consist of certificate renewal, re-issuance, and revocation, the GoDaddy AnyCA Gateway REST plugin is fully supported.
+> </details>
+
 
 
 ## Compatibility
 
-The GoDaddy AnyCA Gateway plugin is compatible with the Keyfactor AnyCA Gateway REST 24.2 and later.
+The GoDaddy AnyCA Gateway REST plugin is compatible with the Keyfactor AnyCA Gateway REST 24.2 and later.
 
 ## Support
-The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning that there is **no SLA** applicable. 
+The GoDaddy AnyCA Gateway REST plugin is open source and community supported, meaning that there is **no SLA** applicable. 
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
@@ -55,7 +75,7 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
 
 1. **GoDaddy Account**
    
-    To use the GoDaddy AnyCA REST plugin, a production GoDaddy account must be created and configured fully. To create a new account, follow [GoDaddy's official documentation](https://www.godaddy.com/help/create-a-godaddy-account-16618). Make sure that your [account Profile is configured fully](https://www.godaddy.com/help/update-my-godaddy-account-profile-27250) with at least the following fields:
+    To use the GoDaddy AnyCA Gateway REST plugin, a production GoDaddy account must be created and configured fully. To create a new account, follow [GoDaddy's official documentation](https://www.godaddy.com/help/create-a-godaddy-account-16618). Make sure that your [account Profile is configured fully](https://www.godaddy.com/help/update-my-godaddy-account-profile-27250) with at least the following fields:
     * Full Name
     * Address
     * Organization
@@ -66,11 +86,11 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
 
 2. **GoDaddy Certificate**
 
-    The GoDaddy AnyCA REST plugin does not purchase certificates from GoDaddy on its own. To enroll a certificate using the plugin, you must first [purchase a certificate from GoDaddy](https://www.godaddy.com/web-security/ssl-certificate). Once purchased, the AnyCA REST plugin enables enrollment, [renewal](https://www.godaddy.com/help/renewing-my-ssl-certificate-864), and [rekeying (re-issuing)](https://www.godaddy.com/help/ssl-certificates-1000006) your purchased certificate.
+    The GoDaddy AnyCA Gateway REST plugin does not purchase certificates from GoDaddy on its own. To enroll a certificate using the plugin, you must first [purchase a certificate from GoDaddy](https://www.godaddy.com/web-security/ssl-certificate). Once purchased, the AnyCA Gateway REST plugin enables enrollment, [renewal](https://www.godaddy.com/help/renewing-my-ssl-certificate-864), and [rekeying (re-issuing)](https://www.godaddy.com/help/ssl-certificates-1000006) your purchased certificate.
 
 3. **GoDaddy API Key**
 
-    The GoDaddy AnyCA REST plugin uses the [GoDaddy API](https://developer.godaddy.com/doc/endpoint/certificates) to perform all certificate operations. GoDaddy offers an environment for testing (OTE) and an environment for production use (Production). To configure the plugin, follow the [official GoDaddy documentation](https://developer.godaddy.com/getstarted) to create a [production API key](https://developer.godaddy.com/keys). To configure the , you'll need the following parameters handy:
+    The GoDaddy AnyCA Gateway REST plugin uses the [GoDaddy API](https://developer.godaddy.com/doc/endpoint/certificates) to perform all certificate operations. GoDaddy offers an environment for testing (OTE) and an environment for production use (Production). To configure the plugin, follow the [official GoDaddy documentation](https://developer.godaddy.com/getstarted) to create a [production API key](https://developer.godaddy.com/keys). To configure the CA, you'll need the following parameters handy:
 
     * API URL (https://api.godaddy.com or https://api.ote-godaddy.com)
     * API Key
@@ -78,7 +98,7 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
 
 4. **GoDaddy Shopper ID**
 
-    To synchronize certificates issued by the GoDaddy CA, the GoDaddy AnyCA REST plugin needs to know your Shopper ID (shown as Customer # on the GoDaddy website). The Shopper ID is a number with a max length of 10 (e.g., 1234567890). To find your Shopper ID, sign into [GoDaddy](https://www.godaddy.com/) and click on your name dropdown on the top right. The Shopper ID is shown as **Customer #** in this dropdown.
+    To synchronize certificates issued by the GoDaddy CA, the GoDaddy AnyCA Gateway REST plugin needs to know your Shopper ID (shown as Customer # on the GoDaddy website). The Shopper ID is a number with a max length of 10 (e.g., 1234567890). To find your Shopper ID, sign into [GoDaddy](https://www.godaddy.com/) and click on your name dropdown on the top right. The Shopper ID is shown as **Customer #** in this dropdown.
 
 
 
@@ -122,7 +142,7 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
           - [Root Certificate](https://certs.godaddy.com/repository/sfroot-g2.crt) 
           - [Intermediate Certificate](https://certs.godaddy.com/repository/sfig2.crt.pem)
 
-        Each defined Certificate Authority in the AnyCA REST can support one certificate authority. Since GoDaddy has four available Certificate Authorities, if you require certificate enrollment from multiple GoDaddy Certificate Authorities, you must define multiple Certificate Authorities in the AnyCA Gateway REST. This will manifest in Command as one GoDaddy CA per defined Certificate Authority.
+        Each defined Certificate Authority in the AnyCA Gateway REST can support one issuing certificate authority. Since GoDaddy has four available Certificate Authorities, if you require certificate enrollment from multiple GoDaddy Certificate Authorities, you must define multiple Certificate Authorities in the AnyCA Gateway REST. This will manifest in Command as one GoDaddy CA per defined Certificate Authority.
 
 
 
@@ -140,8 +160,6 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
 
 2. Define [Certificate Profiles](https://software.keyfactor.com/Guides/AnyCAGatewayREST/Content/AnyCAGatewayREST/AddCP-Gateway.htm) and [Certificate Templates](https://software.keyfactor.com/Guides/AnyCAGatewayREST/Content/AnyCAGatewayREST/AddCA-Gateway.htm) for the Certificate Authority as required. One Certificate Profile must be defined per Certificate Template. It's recommended that each Certificate Profile be named after the Product ID. The GoDaddy plugin supports the following product IDs:
 
-
-
     * **DV_SSL**
     * **DV_WILDCARD_SSL**
     * **EV_SSL**
@@ -155,7 +173,7 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
 
 3. Follow the [official Keyfactor documentation](https://software.keyfactor.com/Guides/AnyCAGatewayREST/Content/AnyCAGatewayREST/AddCA-Keyfactor.htm) to add each defined Certificate Authority to Keyfactor Command and import the newly defined Certificate Templates.
 
-4. In Keyfactor Command, for each imported Certificate Template, follow the [official documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Configuring%20Template%20Options.htm) to define enrollment fields for each of the following parameters:
+4. In Keyfactor Command (v12.3+), for each imported Certificate Template, follow the [official documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Configuring%20Template%20Options.htm) to define enrollment fields for each of the following parameters:
 
 
 
@@ -175,6 +193,8 @@ The GoDaddy AnyCA Gateway plugin is open source and community supported, meaning
     * **RegistrationAgent** - Registration agent name assigned to the organization when its documents were filed for registration 
     * **RegistrationNumber** - Registration number assigned to the organization when its documents were filed for registration 
     * **RootCAType** - The certificate's root CA - Depending on certificate expiration date, SHA_1 not be allowed. Will default to SHA_2 if expiration date exceeds sha1 allowed date. Options are GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, or STARFIELD_SHA_2. 
+
+
 
 ## License
 

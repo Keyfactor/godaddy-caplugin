@@ -15,6 +15,8 @@
 using System;
 using System.Net;
 
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
+
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
 public sealed class ApiResponseAttribute : Attribute
 {

@@ -16,7 +16,7 @@ using System;
 using System.Net;
 using System.Text.Json.Serialization;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 // GET /v1/certificates/{certificateId}
 
@@ -37,8 +37,8 @@ public record CertificateDetailsRestResponse(
     string slotSize,
     string status,
     SubjectAlternativeNames[] subjectAlternativeNames,
-    DateTime? validEnd,
-    DateTime? validStart
+    [property: JsonConverter(typeof(SafeNullableDateTimeConverter))] DateTime? validEnd,
+    [property: JsonConverter(typeof(SafeNullableDateTimeConverter))] DateTime? validStart
 );
 
 // GET /v1/certificates/{certificateId}/download
@@ -183,7 +183,9 @@ public record ReissueCertificateRestRequest
 }
 
 [ApiResponse(HttpStatusCode.Accepted)] // 202 Accepted
-public record ReissueCertificateRestResponse();
+public record ReissueCertificateRestResponse(
+    string certificateId
+);
 
 // POST /v1/certificates/renew
 
@@ -209,7 +211,9 @@ public record RenewCertificateRestRequest
 }
 
 [ApiResponse(HttpStatusCode.Accepted)] // 202 Accepted
-public record RenewCertificateRestResponse();
+public record RenewCertificateRestResponse(
+    string certificateId
+);
     
 // POST /v1/certificates/revoke
 
@@ -340,7 +344,7 @@ public record CertificateDetail(
     string completedAt,
     string validEndAt,
     string validStartAt,
-    DateTime? revokedAt,
+    [property: JsonConverter(typeof(SafeNullableDateTimeConverter))] DateTime? revokedAt,
     bool renewalAvailable,
     string serialNumber,
     string slotSize,
@@ -358,16 +362,54 @@ public record Pagination(
 // Errors
 
 #nullable enable
-public record Error(
-    string code,
-    ErrorField[]? fields,
-    string message
-);
-#nullable restore
+public class Error
+{
+    [JsonPropertyName("code")]
+    public string? Code { get; }
 
-public record ErrorField(
-    string code,
-    string message,
-    string path
-);
+    [JsonPropertyName("fields")]
+    public ErrorField[]? Fields { get; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; }
+
+    [JsonConstructor]
+    public Error(string? code, ErrorField[]? fields, string? message)
+    {
+        Code = code;
+        Fields = fields;
+        Message = message;
+    }
+
+    public bool IsRateLimitError()
+    {
+        return Code == "TOO_MANY_REQUESTS";
+    }
+
+    public override string ToString()
+    {
+        string message = $"{Message} [{Code}]";
+        if (Fields != null && Fields.Length > 0)
+        {
+            foreach (ErrorField field in Fields)
+            {
+                message += $"\n    - {field.Message} [{field.Code} {field.Path}]";
+            }
+        }
+        return message;
+    }
+}
+
+public class ErrorField
+{
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("path")]
+    public string? Path { get; set; }
+}
+#nullable restore
 

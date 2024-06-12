@@ -13,13 +13,13 @@
 // limitations under the License.
 
 using System.Collections.Concurrent;
-using GoDaddy.Client;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class ClientTests
 {
@@ -45,11 +45,42 @@ public class ClientTests
             .WithShopperId(env.ShopperId)
             .Build();
 
+        client.Enable();
+
         BlockingCollection<AnyCAPluginCertificate> certificates = new();
 
         // Act
         int numberOfDownloadedCerts = client.DownloadAllIssuedCertificates(certificates, CancellationToken.None).Result;
         _logger.LogInformation($"Number of downloaded certificates: {numberOfDownloadedCerts}");
+    }
+
+    [IntegrationTestingFact]
+    public void GoDaddyClient_Integration_RateLimiter_ReturnSuccess()
+    {
+        // Arrange
+        IntegrationTestingFact env = new();
+
+        IGoDaddyClient client = new GoDaddyClient.Builder()
+            .WithBaseUrl(env.BaseApiUrl)
+            .WithApiKey(env.ApiKey)
+            .WithApiSecret(env.ApiSecret)
+            .WithShopperId(env.ShopperId)
+            .Build();
+
+        client.Enable();
+
+        // Act
+        
+        List<Task> tasks = new();
+        for (int i = 0; i < 100; i++)
+        {
+            _logger.LogDebug($"Request number: {i + 1}");
+            tasks.Add(client.Ping());
+        }
+        foreach (var task in tasks)
+        {
+            task.Wait();
+        }
     }
 
     [IntegrationTestingFact]
@@ -64,6 +95,8 @@ public class ClientTests
             .WithApiSecret(env.ApiSecret)
             .WithShopperId(env.ShopperId)
             .Build();
+
+        client.Enable();
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new();
 

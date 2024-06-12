@@ -18,9 +18,9 @@ using System.Reflection;
 using Keyfactor.AnyGateway.Extensions;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
-using static GoDaddy.GoDaddyCAPluginConfig;
+using static Keyfactor.Extensions.CAPlugin.GoDaddy.GoDaddyCAPluginConfig;
 
-namespace GoDaddy.Client;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
 public class EnrollmentRequestBuilder : IEnrollmentRequestBuilder
 {

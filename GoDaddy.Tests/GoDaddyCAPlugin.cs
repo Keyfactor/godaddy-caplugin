@@ -15,15 +15,16 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using GoDaddy.Client;
 using Keyfactor.AnyGateway.Extensions;
+using Keyfactor.Extensions.CAPlugin.GoDaddy;
+using Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 using Keyfactor.Logging;
 using Keyfactor.PKI.Enums.EJBCA;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
-using static GoDaddy.GoDaddyCAPluginConfig;
+using static Keyfactor.Extensions.CAPlugin.GoDaddy.GoDaddyCAPluginConfig;
 
-namespace GoDaddy.Tests;
+namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class GoDaddyCAPluginTests
 {
@@ -46,7 +47,8 @@ public class GoDaddyCAPluginTests
             ApiKey = env.ApiKey,
             ApiSecret = env.ApiSecret,
             BaseUrl = env.BaseApiUrl,
-            ShopperId = env.ShopperId
+            ShopperId = env.ShopperId,
+            Enabled = true,
         };
 
         IAnyCAPluginConfigProvider configProvider = new FakeCaConfigProvider(config);
@@ -514,12 +516,19 @@ public class GoDaddyCAPluginTests
     {
         // Arrange
         IntegrationTestingFact env = new();
+        if (!env.BaseApiUrl.Contains("ote"))
+        {
+            _logger.LogWarning("Enrollment integration test should be run against the GoDaddy OT&E environment.");
+            return;
+        }
+
         GoDaddyCAPluginConfig.Config config = new GoDaddyCAPluginConfig.Config()
         {
             ApiKey = env.ApiKey,
             ApiSecret = env.ApiSecret,
             BaseUrl = env.BaseApiUrl,
-            ShopperId = env.ShopperId
+            ShopperId = env.ShopperId,
+            Enabled = true,
         };
 
         IAnyCAPluginConfigProvider configProvider = new FakeCaConfigProvider(config);

@@ -1,37 +1,13 @@
-
-# GoDaddy AnyCA REST plugin
-
-GoDaddy plugin for the AnyCA Gateway framework
-
-#### Integration status: Production - Ready for use in production environments.
-
-## About the Keyfactor 
-
-
-
-## Support for GoDaddy AnyCA REST plugin
-
-GoDaddy AnyCA REST plugin is supported by Keyfactor for Keyfactor customers. If you have a support issue, please open a support ticket via the Keyfactor Support Portal at https://support.keyfactor.com
-
-###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
-
----
-
-
----
-
-
-
 <h1 align="center" style="border-bottom: none">
     GoDaddy AnyCA Gateway REST Plugin
 </h1>
 
 <p align="center">
   <!-- Badges -->
-<img src="https://img.shields.io/badge/integration_status-prototype-3D1973?style=flat-square" alt="Integration Status: prototype" />
-<a href="https://github.com/Keyfactor/godaddy-anycagateway/releases"><img src="https://img.shields.io/github/v/release/Keyfactor/godaddy-anycagateway?style=flat-square" alt="Release" /></a>
-<img src="https://img.shields.io/github/issues/Keyfactor/godaddy-anycagateway?style=flat-square" alt="Issues" />
-<img src="https://img.shields.io/github/downloads/Keyfactor/godaddy-anycagateway/total?style=flat-square&label=downloads&color=28B905" alt="GitHub Downloads (all assets, all releases)" />
+<img src="https://img.shields.io/badge/integration_status-production-3D1973?style=flat-square" alt="Integration Status: production" />
+<a href="https://github.com/Keyfactor/godaddy-caplugin/releases"><img src="https://img.shields.io/github/v/release/Keyfactor/godaddy-caplugin?style=flat-square" alt="Release" /></a>
+<img src="https://img.shields.io/github/issues/Keyfactor/godaddy-caplugin?style=flat-square" alt="Issues" />
+<img src="https://img.shields.io/github/downloads/Keyfactor/godaddy-caplugin/total?style=flat-square&label=downloads&color=28B905" alt="GitHub Downloads (all assets, all releases)" />
 </p>
 
 <p align="center">
@@ -84,14 +60,12 @@ The GoDaddy AnyCA Gateway REST plugin extends the capabilities of the [GoDaddy C
 > * If your certificate workflows mostly consist of certificate renewal, re-issuance, and revocation, the GoDaddy AnyCA Gateway REST plugin is fully supported.
 > </details>
 
-
-
 ## Compatibility
 
 The GoDaddy AnyCA Gateway REST plugin is compatible with the Keyfactor AnyCA Gateway REST 24.2 and later.
 
 ## Support
-The GoDaddy AnyCA Gateway REST plugin is open source and community supported, meaning that there is **no SLA** applicable. 
+The GoDaddy AnyCA Gateway REST plugin is supported by Keyfactor for Keyfactor customers. If you have a support issue, please open a support ticket with your Keyfactor representative. If you have a support issue, please open a support ticket via the Keyfactor Support Portal at https://support.keyfactor.com. 
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
@@ -124,13 +98,11 @@ The GoDaddy AnyCA Gateway REST plugin is open source and community supported, me
 
     To synchronize certificates issued by the GoDaddy CA, the GoDaddy AnyCA Gateway REST plugin needs to know your Shopper ID (shown as Customer # on the GoDaddy website). The Shopper ID is a number with a max length of 10 (e.g., 1234567890). To find your Shopper ID, sign into [GoDaddy](https://www.godaddy.com/) and click on your name dropdown on the top right. The Shopper ID is shown as **Customer #** in this dropdown.
 
-
-
 ## Installation
 
 1. Install the AnyCA Gateway REST per the [official Keyfactor documentation](https://software.keyfactor.com/Guides/AnyCAGatewayREST/Content/AnyCAGatewayREST/InstallIntroduction.htm).
 
-2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [GoDaddy AnyCA Gateway REST plugin](https://github.com/Keyfactor/godaddy-anycagateway/releases/latest) from GitHub.
+2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [GoDaddy AnyCA Gateway REST plugin](https://github.com/Keyfactor/godaddy-caplugin/releases/latest) from GitHub.
 
 3. Copy the unzipped directory (usually called `net6.0`) to the Extensions directory:
 
@@ -150,7 +122,6 @@ The GoDaddy AnyCA Gateway REST plugin is open source and community supported, me
 
     * **Gateway Registration**
 
-
         GoDaddy has four available Certificate Authorities:
 
         - GoDaddy SHA-1 (GODADDY_SHA_1)
@@ -168,13 +139,9 @@ The GoDaddy AnyCA Gateway REST plugin is open source and community supported, me
 
         Each defined Certificate Authority in the AnyCA Gateway REST can support one issuing certificate authority. Since GoDaddy has four available Certificate Authorities, if you require certificate enrollment from multiple GoDaddy Certificate Authorities, you must define multiple Certificate Authorities in the AnyCA Gateway REST. This will manifest in Command as one GoDaddy CA per defined Certificate Authority.
 
-
-
     * **CA Connection**
 
         Populate using the configuration fields collected in the [requirements](#requirements) section.
-
-
 
         * **ApiKey** - The API Key for the GoDaddy API 
         * **ApiSecret** - The API Secret for the GoDaddy API 
@@ -199,8 +166,6 @@ The GoDaddy AnyCA Gateway REST plugin is open source and community supported, me
 
 4. In Keyfactor Command (v12.3+), for each imported Certificate Template, follow the [official documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Configuring%20Template%20Options.htm) to define enrollment fields for each of the following parameters:
 
-
-
     * **JobTitle** - The job title of the certificate requestor 
     * **CertificateValidityInYears** - Number of years the certificate will be valid for 
     * **LastName** - Last name of the certificate requestor 
@@ -220,6 +185,8 @@ The GoDaddy AnyCA Gateway REST plugin is open source and community supported, me
 
 
 
+
+
 ## License
 
 Apache License 2.0, see [LICENSE](LICENSE).
@@ -227,5 +194,3 @@ Apache License 2.0, see [LICENSE](LICENSE).
 ## Related Integrations
 
 See all [Keyfactor Any CA Gateways (REST)](https://github.com/orgs/Keyfactor/repositories?q=anycagateway).
-
-

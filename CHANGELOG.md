@@ -8,3 +8,6 @@
             - Support certificate re-issuance (new public/private keys with the same or different domain names)
         - Certificate revocation
             - Request revocation of a previously issued certificate
+
+- 1.2.0
+    - Add special condition to handle status 409 when downloading certificates from GoDaddy. 409 indicates that the certificate state does not allow download.

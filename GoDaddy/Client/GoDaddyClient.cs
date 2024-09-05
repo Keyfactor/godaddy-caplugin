@@ -31,23 +31,27 @@ using RestSharp.Serializers.Json;
 
 namespace Keyfactor.Extensions.CAPlugin.GoDaddy.Client;
 
-public class GoDaddyAuthenticator : AuthenticatorBase {
+public class GoDaddyAuthenticator : AuthenticatorBase
+{
     readonly string _baseUrl;
     readonly string _apiKey;
     readonly string _apiSecret;
 
-    public GoDaddyAuthenticator(string apiToken, string apiSecret) : base("") {
+    public GoDaddyAuthenticator(string apiToken, string apiSecret) : base("")
+    {
         _apiKey = apiToken;
         _apiSecret = apiSecret;
     }
 
-    protected override ValueTask<RestSharp.Parameter> GetAuthenticationParameter(string accessToken) {
+    protected override ValueTask<RestSharp.Parameter> GetAuthenticationParameter(string accessToken)
+    {
         var parameter = new HeaderParameter(KnownHeaders.Authorization, $"sso-key {_apiKey}:{_apiSecret}");
         return new ValueTask<RestSharp.Parameter>(parameter);
     }
 }
 
-public class GoDaddyClient : IGoDaddyClient, IDisposable {
+public class GoDaddyClient : IGoDaddyClient, IDisposable
+{
     private ILogger _logger;
     readonly RestClient _client;
 
@@ -67,7 +71,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         private string _apiKey { get; set; }
         private string _apiSecret { get; set; }
         private string _shopperId { get; set; }
-        
+
         public IGoDaddyClientBuilder WithApiKey(string apiToken)
         {
             _apiKey = apiToken;
@@ -75,7 +79,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         }
 
         public IGoDaddyClientBuilder WithApiSecret(string apiSecret)
-        { 
+        {
             _apiSecret = apiSecret;
             return this;
         }
@@ -86,7 +90,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             return this;
         }
 
-        public IGoDaddyClientBuilder WithShopperId(string shopperId) {
+        public IGoDaddyClientBuilder WithShopperId(string shopperId)
+        {
             _shopperId = shopperId;
             return this;
         }
@@ -99,12 +104,14 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         }
     }
 
-    public GoDaddyClient(string apiUrl, string apiKey, string apiSecret, string shopperId) {
+    public GoDaddyClient(string apiUrl, string apiKey, string apiSecret, string shopperId)
+    {
         _logger = LogHandler.GetClassLogger<GoDaddyClient>();
 
         _logger.LogDebug($"Creating GoDaddyClient with API URL: {apiUrl}, API Key: {apiKey}, Shopper ID: {shopperId}");
 
-        var options = new RestClientOptions(apiUrl){
+        var options = new RestClientOptions(apiUrl)
+        {
             Authenticator = new GoDaddyAuthenticator(apiKey, apiSecret),
         };
 
@@ -154,7 +161,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         _logger.LogDebug("Validating GoDaddy API connection");
 
         string path = $"/v1/shoppers/{_shopperId}";
-        IDictionary <string, string> query = new Dictionary<string, string> {
+        IDictionary<string, string> query = new Dictionary<string, string> {
             { "includes", "customerId" }
         };
 
@@ -170,14 +177,17 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         }
     }
 
-    private string GetCustomerId() {
+    private string GetCustomerId()
+    {
         EnsureClientIsEnabled();
-        if (string.IsNullOrEmpty(_shopperId)) {
+        if (string.IsNullOrEmpty(_shopperId))
+        {
             _logger.LogError("Shopper ID is required to get customer ID");
             throw new ArgumentNullException(nameof(_shopperId));
         }
 
-        if (!string.IsNullOrEmpty(_customerId)) {
+        if (!string.IsNullOrEmpty(_customerId))
+        {
             _logger.LogTrace($"Returning cached customer ID: {_customerId}");
             return _customerId;
         }
@@ -185,7 +195,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         _logger.LogDebug($"Getting customer ID for shopper ID: {_shopperId}");
 
         string path = $"/v1/shoppers/{_shopperId}";
-        IDictionary <string, string> query = new Dictionary<string, string> {
+        IDictionary<string, string> query = new Dictionary<string, string> {
             { "includes", "customerId" }
         };
 
@@ -196,7 +206,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
         return _customerId;
     }
 
-    public async Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId) {
+    public async Task<AnyCAPluginCertificate> DownloadCertificate(string certificateId)
+    {
         EnsureClientIsEnabled();
         _logger.LogDebug($"Downloading certificate with ID: {certificateId}");
 
@@ -214,8 +225,9 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             RevocationDate = details.revokedAt
         };
     }
-    
-    public async Task<string> DownloadCertificatePem(string certificateId) {
+
+    public async Task<string> DownloadCertificatePem(string certificateId)
+    {
         EnsureClientIsEnabled();
         _logger.LogDebug($"Downloading certificate with ID: {certificateId}");
 
@@ -267,7 +279,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
             foreach (CertificateDetail certificateDetail in certificatesWithPagination.certificates)
             {
                 string debugMessage = "Downloading certificate ";
-                if (!string.IsNullOrEmpty(certificateDetail.commonName)) 
+                if (!string.IsNullOrEmpty(certificateDetail.commonName))
                     debugMessage += $"with CN {certificateDetail.commonName} ";
                 if (!string.IsNullOrEmpty(certificateDetail.validStartAt))
                     debugMessage += $"[issued at {certificateDetail.validStartAt}] ";
@@ -277,7 +289,17 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                     debugMessage += $"[revoked at {certificateDetail.revokedAt}]";
                 _logger.LogDebug(debugMessage);
 
-                string certificatePemString = await DownloadCertificatePem(certificateDetail.certificateId);
+                string certificatePemString;
+                try
+                {
+                    certificatePemString = await DownloadCertificatePem(certificateDetail.certificateId);
+                }
+                catch (DownloadNotAllowed)
+                {
+                    _logger.LogWarning($"Certificate with request ID {certificateDetail.certificateId} cannot be downloaded (status 409)");
+                    continue;
+                }
+
                 certificatesBuffer.Add(new AnyCAPluginCertificate()
                 {
                     CARequestID = certificateDetail.certificateId,
@@ -538,6 +560,11 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 }
 
                 _logger.LogError($"Received response with unexpected status code [{response.StatusCode}]");
+                if (response.StatusCode == HttpStatusCode.Conflict)
+                {
+                    throw new DownloadNotAllowed($"Conflict error occurred: {response.Content}");
+                }
+
                 if (response.Content == null)
                 {
                     throw new Exception("Response was not successful and no content was returned.");
@@ -552,7 +579,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 try
                 {
                     _logger.LogTrace("Serializing response content to error object");
-                    
+
                     JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
                     {
                         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -589,7 +616,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
         throw new Exception("Failed to GET request after all retries");
     }
-    
+
     public async Task<TResponse> PostAsync<TRequest, TResponse>(string endpoint, TRequest body, IDictionary<string, string> query = null)
         where TRequest : class
         where TResponse : class
@@ -656,7 +683,7 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
                 try
                 {
                     _logger.LogTrace("Serializing response content to error object");
-                    
+
                     JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
                     {
                         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -699,7 +726,8 @@ public class GoDaddyClient : IGoDaddyClient, IDisposable {
 
     record GoDaddySingleObject<T>(T Data);
 
-    public void Dispose() {
+    public void Dispose()
+    {
         _client?.Dispose();
         GC.SuppressFinalize(this);
     }

@@ -12,3 +12,5 @@
 - 1.1.0
   - chore(docs): Upgrade GitHub Actions to use Bootstrap Workflow v3 to support Doctool
 
+- 1.2.0
+    - Add special condition to handle status 409 when downloading certificates from GoDaddy. 409 indicates that the certificate state does not allow download.

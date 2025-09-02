@@ -9,6 +9,7 @@
     "update_catalog": true,
     "gateway_framework": "24.2",
     "release_dir": "GoDaddy/bin/Release/net6.0",
+    "release_project": "GoDaddy/GoDaddy.csproj",
     "about": {
         "carest": {
             "ca_plugin_config": [

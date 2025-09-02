@@ -104,13 +104,16 @@ The GoDaddy AnyCA Gateway REST plugin is supported by Keyfactor for Keyfactor cu
 
 2. On the server hosting the AnyCA Gateway REST, download and unzip the latest [GoDaddy AnyCA Gateway REST plugin](https://github.com/Keyfactor/godaddy-caplugin/releases/latest) from GitHub.
 
-3. Copy the unzipped directory (usually called `net6.0`) to the Extensions directory:
+3. Copy the unzipped directory (usually called `net6.0` or `net8.0`) to the Extensions directory:
+
 
     ```shell
+    Depending on your AnyCA Gateway REST version, copy the unzipped directory to one of the following locations:
     Program Files\Keyfactor\AnyCA Gateway\AnyGatewayREST\net6.0\Extensions
+    Program Files\Keyfactor\AnyCA Gateway\AnyGatewayREST\net8.0\Extensions
     ```
 
-    > The directory containing the GoDaddy AnyCA Gateway REST plugin DLLs (`net6.0`) can be named anything, as long as it is unique within the `Extensions` directory.
+    > The directory containing the GoDaddy AnyCA Gateway REST plugin DLLs (`net6.0` or `net8.0`) can be named anything, as long as it is unique within the `Extensions` directory.
 
 4. Restart the AnyCA Gateway REST service.
 
@@ -182,8 +185,6 @@ The GoDaddy AnyCA Gateway REST plugin is supported by Keyfactor for Keyfactor cu
     * **RegistrationAgent** - Registration agent name assigned to the organization when its documents were filed for registration 
     * **RegistrationNumber** - Registration number assigned to the organization when its documents were filed for registration 
     * **RootCAType** - The certificate's root CA - Depending on certificate expiration date, SHA_1 not be allowed. Will default to SHA_2 if expiration date exceeds sha1 allowed date. Options are GODADDY_SHA_1, GODADDY_SHA_2, STARFIELD_SHA_1, or STARFIELD_SHA_2. 
-
-
 
 
 

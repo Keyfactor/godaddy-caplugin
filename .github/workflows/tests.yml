@@ -11,11 +11,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup dotnet 6.0
+      # Setup dotnet 8.0
       # https://github.com/actions/setup-dotnet
       - uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.x'
+          dotnet-version: '8.x'
 
       # Setup nuget
       - name: Setup build environment

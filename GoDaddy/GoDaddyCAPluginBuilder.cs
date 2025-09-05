@@ -35,7 +35,6 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
         GoDaddyCAPluginConfig.Config properties = JsonConvert.DeserializeObject<GoDaddyCAPluginConfig.Config>(rawConfig);
 
         _logger.LogTrace($"Builder - ApiKey: {properties.ApiKey}");
-        _logger.LogTrace($"Builder - ApiSecret: {properties.ApiSecret}");
         _logger.LogTrace($"Builder - BaseUrl: {properties.BaseUrl}");
         _logger.LogTrace($"Builder - ShopperId: {properties.ShopperId}");
         _logger.LogTrace($"Builder - Enabled: {properties.Enabled}");
@@ -59,7 +58,6 @@ public class GoDaddyCAPluginBuilder<TBuilder> where TBuilder : IGoDaddyClientBui
         GoDaddyCAPluginConfig.Config properties = JsonConvert.DeserializeObject<GoDaddyCAPluginConfig.Config>(rawConfig);
 
         _logger.LogTrace($"Builder - ApiKey: {properties.ApiKey}");
-        _logger.LogTrace($"Builder - ApiSecret: {properties.ApiSecret}");
         _logger.LogTrace($"Builder - BaseUrl: {properties.BaseUrl}");
         _logger.LogTrace($"Builder - ShopperId: {properties.ShopperId}");
         _logger.LogTrace($"Builder - Enabled: {properties.Enabled}");

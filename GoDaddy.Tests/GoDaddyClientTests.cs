@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2026 Keyfactor
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,15 +21,15 @@ using NLog.Extensions.Logging;
 
 namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
-public class ClientTests
+public class GoDaddyClientTests
 {
     ILogger _logger { get; set;}
 
-    public ClientTests()
+    public GoDaddyClientTests()
     {
         ConfigureLogging();
 
-        _logger = LogHandler.GetClassLogger<ClientTests>();
+        _logger = LogHandler.GetClassLogger<GoDaddyClientTests>();
     }
 
     [IntegrationTestingFact]

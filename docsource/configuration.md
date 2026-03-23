@@ -30,7 +30,7 @@ The GoDaddy AnyCA Gateway REST plugin extends the capabilities of the [GoDaddy C
 
 1. **GoDaddy Account**
    
-    To use the GoDaddy AnyCA Gateway REST plugin, a production GoDaddy account must be created and configured fully. To create a new account, follow [GoDaddy's official documentation](https://www.godaddy.com/help/create-a-godaddy-account-16618). Make sure that your [account Profile is configured fully](https://www.godaddy.com/help/update-my-godaddy-account-profile-27250) with at least the following fields:
+    To use the GoDaddy AnyCA Gateway REST plugin, a GoDaddy account must be created and configured fully. To create a new account, follow [GoDaddy's official documentation](https://www.godaddy.com/help/create-a-godaddy-account-16618). Make sure that your [account Profile is configured fully](https://www.godaddy.com/help/update-my-godaddy-account-profile-27250) with at least the following fields:
     * Full Name
     * Address
     * Organization
@@ -45,11 +45,13 @@ The GoDaddy AnyCA Gateway REST plugin extends the capabilities of the [GoDaddy C
 
 3. **GoDaddy API Key**
 
-    The GoDaddy AnyCA Gateway REST plugin uses the [GoDaddy API](https://developer.godaddy.com/doc/endpoint/certificates) to perform all certificate operations. GoDaddy offers an environment for testing (OTE) and an environment for production use (Production). To configure the plugin, follow the [official GoDaddy documentation](https://developer.godaddy.com/getstarted) to create a [production API key](https://developer.godaddy.com/keys). To configure the CA, you'll need the following parameters handy:
+    The GoDaddy AnyCA Gateway REST plugin uses the [GoDaddy API](https://developer.godaddy.com/doc/endpoint/certificates) to perform all certificate operations. To configure the plugin, follow the [official GoDaddy documentation](https://developer.godaddy.com/getstarted) to create a [production API key](https://developer.godaddy.com/keys). To configure the CA, you'll need the following parameters handy:
 
-    * API URL (https://api.godaddy.com or https://api.ote-godaddy.com)
+    * API URL (https://api.godaddy.com)
     * API Key
     * API Secret
+
+> **🚧 Note**: While GoDaddy offers a separate API environment for testing called the OTE (Operational Test and Evaluation) environment, **OTE API keys cannot be used with this integration**. The OTE environment does not support shopper ID resolution, which is required for API operations in this integration. Production API keys must be used.
 
 4. **GoDaddy Shopper ID**
 

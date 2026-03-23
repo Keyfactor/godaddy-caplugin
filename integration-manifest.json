@@ -1,5 +1,5 @@
 {
-    "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
+    "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
     "name": "GoDaddy AnyCA REST plugin",
     "description": "GoDaddy plugin for the AnyCA Gateway framework",
     "status": "production",
@@ -23,7 +23,7 @@
                 },
                 {
                     "name": "BaseUrl",
-                    "description": "The Base URL for the GoDaddy API - Usually either https://api.godaddy.com or https://api.ote-godaddy.com"
+                    "description": "The Base URL for the GoDaddy API - Usually https://api.godaddy.com"
                 },
                 {
                     "name": "ShopperId",

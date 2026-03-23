@@ -9,21 +9,25 @@ jobs:
       # Checkout code
       # https://github.com/actions/checkout
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Setup dotnet 8.0
       # https://github.com/actions/setup-dotnet
-      - uses: actions/setup-dotnet@v3
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.x'
 
       # Setup nuget
-      - name: Setup build environment
+      - name: Add Keyfactor NuGet Source
         run: |
           dotnet nuget add source https://nuget.pkg.github.com/Keyfactor/index.json -n github -u ${{ github.actor }} -p ${{ secrets.V2BUILDTOKEN }} --store-password-in-clear-text
-          dotnet restore
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
 
       # Build and test dotnet project
       - name: Build and Test
-        run: dotnet test
-
+        run: dotnet test --no-build --configuration Release

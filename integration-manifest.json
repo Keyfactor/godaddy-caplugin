@@ -23,7 +23,7 @@
                 },
                 {
                     "name": "BaseUrl",
-                    "description": "The Base URL for the GoDaddy API - Usually either https://api.godaddy.com or https://api.ote-godaddy.com"
+                    "description": "The Base URL for the GoDaddy API - Usually https://api.godaddy.com"
                 },
                 {
                     "name": "ShopperId",

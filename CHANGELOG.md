@@ -1,3 +1,7 @@
+# v1.2.1
+## Chores
+- Add note about OTE API keys not being supported with this integration due to shopper ID resolution requirements.
+
 # v1.2.0
   - Add special condition to handle status 409 when downloading certificates from GoDaddy. 409 indicates that the certificate state does not allow download.
 

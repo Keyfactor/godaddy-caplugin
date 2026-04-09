@@ -80,7 +80,7 @@ public class GoDaddyCAPluginConfig
             },
             [ConfigConstants.BaseUrl] = new PropertyConfigInfo()
             {
-                Comments = "The Base URL for the GoDaddy API - Usually either https://api.godaddy.com or https://api.ote-godaddy.com",
+                Comments = "The Base URL for the GoDaddy API - Usually https://api.godaddy.com",
                 Hidden = false,
                 DefaultValue = "https://api.godaddy.com",
                 Type = "String"

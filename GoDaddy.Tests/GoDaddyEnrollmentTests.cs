@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2026 Keyfactor
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,28 +25,26 @@ using static Keyfactor.Extensions.CAPlugin.GoDaddy.GoDaddyCAPluginConfig;
 
 namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
-public class EnrollmentAbstractionTests
+public class GoDaddyEnrollmentTests
 {
+    private const string TestSubject = "CN=Test Subject";
+    private static string TestCsr = GenerateCSR(TestSubject);
     ILogger _logger { get; set;}
 
-    public EnrollmentAbstractionTests()
+    public GoDaddyEnrollmentTests()
     {
         ConfigureLogging();
 
-        _logger = LogHandler.GetClassLogger<EnrollmentAbstractionTests>();
+        _logger = LogHandler.GetClassLogger<GoDaddyEnrollmentTests>();
     }
 
     [Fact]
-    public void EnrollmentStrategyFactory_Enrollment_ValidParameters_ReturnSuccess()
+    public async Task EnrollmentStrategyFactory_Enrollment_ValidParameters_ReturnSuccess()
     {
-        // Arrange
-        string subject = "CN=Test Subject";
-        string csrString = GenerateCSR(subject);
-
         EnrollmentRequest fakeRequest = new EnrollmentRequest
         {
             ProductType = CertificateEnrollmentType.DV_SSL,
-            CSR = csrString,
+            CSR = TestSubject,
             EnrollmentType = EnrollmentType.New,
             RootCAType = RootCAType.STARFIELD_SHA_2,
             SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
@@ -86,14 +84,14 @@ public class EnrollmentAbstractionTests
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
 
         // Act
-        IEnrollmentStrategy strategy = factory.GetStrategy(fakeRequest).Result;
+        IEnrollmentStrategy strategy = await factory.GetStrategy(fakeRequest);
 
         // Assert
         Assert.Equal("Enrollment", strategy.StrategyName);
     }
 
     [Fact]
-    public void EnrollmentStrategyFactory_Renewal_ValidParameters_ReturnSuccess()
+    public async Task EnrollmentStrategyFactory_Renewal_ValidParameters_ReturnSuccess()
     {
         // Arrange
         DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-5);
@@ -117,13 +115,10 @@ public class EnrollmentAbstractionTests
         };
         ICertificateDataReader fakeCertificateReader = new FakeCertificateDataReader(fakeClient);
 
-        string subject = "CN=Test Subject";
-        string csrString = GenerateCSR(subject);
-
         EnrollmentRequest fakeRequest = new EnrollmentRequest
         {
             ProductType = CertificateEnrollmentType.DV_SSL,
-            CSR = csrString,
+            CSR = TestCsr,
             EnrollmentType = EnrollmentType.RenewOrReissue,
             RootCAType = RootCAType.STARFIELD_SHA_2,
             SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
@@ -160,14 +155,14 @@ public class EnrollmentAbstractionTests
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
 
         // Act
-        IEnrollmentStrategy strategy = factory.GetStrategy(fakeRequest).Result;
+        IEnrollmentStrategy strategy = await factory.GetStrategy(fakeRequest);
 
         // Assert
         Assert.Equal("Renewal", strategy.StrategyName);
     }
 
     [Fact]
-    public void EnrollmentStrategyFactory_Reissue_ValidParameters_ReturnSuccess()
+    public async Task EnrollmentStrategyFactory_Reissue_ValidParameters_ReturnSuccess()
     {
         // Arrange
         DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-100);
@@ -191,13 +186,10 @@ public class EnrollmentAbstractionTests
         };
         ICertificateDataReader fakeCertificateReader = new FakeCertificateDataReader(fakeClient);
 
-        string subject = "CN=Test Subject";
-        string csrString = GenerateCSR(subject);
-
         EnrollmentRequest fakeRequest = new EnrollmentRequest
         {
             ProductType = CertificateEnrollmentType.DV_SSL,
-            CSR = csrString,
+            CSR = TestCsr,
             EnrollmentType = EnrollmentType.RenewOrReissue,
             RootCAType = RootCAType.STARFIELD_SHA_2,
             SubjectAlternativeNames = new string[] { "example.com", "www.example.com" },
@@ -234,7 +226,7 @@ public class EnrollmentAbstractionTests
         EnrollmentStrategyFactory factory = new EnrollmentStrategyFactory(fakeCertificateReader, fakeClient);
 
         // Act
-        IEnrollmentStrategy strategy = factory.GetStrategy(fakeRequest).Result;
+        IEnrollmentStrategy strategy = await factory.GetStrategy(fakeRequest);
 
         // Assert
         Assert.Equal("Reissue", strategy.StrategyName);
@@ -312,10 +304,10 @@ public class EnrollmentAbstractionTests
         Assert.Equal("Agent", request.RegistrationAgent);
         Assert.Equal("REG-12345", request.RegistrationNumber);
 
-        Assert.Equal(request.SubjectAlternativeNames.Length, 3);
-        Assert.True(request.SubjectAlternativeNames.Contains("example.com"));
-        Assert.True(request.SubjectAlternativeNames.Contains("www.example.com"));
-        Assert.True(request.SubjectAlternativeNames.Contains("192.168.1.1"));
+        Assert.Equal(3, request.SubjectAlternativeNames.Length);
+        Assert.Contains("example.com", request.SubjectAlternativeNames);
+        Assert.Contains("www.example.com", request.SubjectAlternativeNames);
+        Assert.Contains("192.168.1.1", request.SubjectAlternativeNames);
     }
 
     static void ConfigureLogging()

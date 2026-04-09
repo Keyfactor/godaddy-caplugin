@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2026 Keyfactor
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,15 @@ namespace Keyfactor.Extensions.CAPlugin.GoDaddyTests;
 
 public class GoDaddyCAPluginTests
 {
+    private static readonly DateTimeOffset NotBefore = DateTimeOffset.Now.AddDays(-100);
+    private static readonly DateTimeOffset ReissueNotAfter = DateTimeOffset.Now.AddDays(365);
+    private static readonly DateTimeOffset RenewalNotAfter = DateTimeOffset.Now.AddDays(59);
+    
+    private const string TestSubject = "CN=Test Subject";
+    private static readonly string TestCsr = GenerateCSR(TestSubject);
+    private static readonly X509Certificate2 FakeReissueCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", NotBefore, ReissueNotAfter);
+    private static readonly X509Certificate2 FakeRenewalCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", NotBefore, RenewalNotAfter);
+    
     ILogger _logger { get; set;}
 
     public GoDaddyCAPluginTests()
@@ -253,7 +262,7 @@ public class GoDaddyCAPluginTests
     [InlineData("UCC_DV_SSL")]
     [InlineData("UCC_EV_SSL")]
     [InlineData("UCC_OV_SSL")]
-    public void GoDaddyCAPlugin_Enroll_ReturnSuccess(string productID)
+    public async Task GoDaddyCAPlugin_Enroll_ReturnSuccess(string productID)
     {
         // Arrange
         FakeGoDaddyClient fakeClient = new FakeGoDaddyClient();
@@ -267,10 +276,6 @@ public class GoDaddyCAPluginTests
             Client = fakeClient
         };
         plugin.Initialize(configProvider, certificateDataReader);
-        
-        // CSR
-        string subject = "CN=Test Subject";
-        string csrString = GenerateCSR(subject);
 
         Dictionary<string, string[]> sans = new();
         
@@ -307,10 +312,10 @@ public class GoDaddyCAPluginTests
         EnrollmentType type = EnrollmentType.New;
 
         // Act
-        EnrollmentResult result = plugin.Enroll(csrString, subject, sans, productInfo, format, type).Result;
+        EnrollmentResult result = await plugin.Enroll(TestCsr, TestSubject, sans, productInfo, format, type);
         
         // Assert
-        Assert.Equal(result.Status, (int)EndEntityStatus.GENERATED);
+        Assert.Equal((int)EndEntityStatus.GENERATED, result.Status);
     }
 
     [Theory]
@@ -324,12 +329,13 @@ public class GoDaddyCAPluginTests
     [InlineData("UCC_DV_SSL")]
     [InlineData("UCC_EV_SSL")]
     [InlineData("UCC_OV_SSL")]
-    public void GoDaddyCAPlugin_Renew_ReturnSuccess(string productID)
+    public async Task GoDaddyCAPlugin_Renew_ReturnSuccess(string productID)
     {
         // Arrange
-        DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-5);
-        DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(20);
-        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
+        
+        // Renewal is only available 60 days prior to expiration of the previous certificate and 30 days after the 
+        // expiration of the previous certificate. 
+        
         string fakeCaRequestId = Guid.NewGuid().ToString();
         
         FakeGoDaddyClient fakeClient = new FakeGoDaddyClient()
@@ -339,19 +345,13 @@ public class GoDaddyCAPluginTests
                 { fakeCaRequestId, new AnyCAPluginCertificate
                     {
                         CARequestID = fakeCaRequestId,
-                        Certificate = fakeCertificate.ExportCertificatePem(),
+                        Certificate = FakeRenewalCertificate.ExportCertificatePem(),
                         Status = 123,
                         ProductID = productID,
                     }
                 }
             }
         };
-
-        // Renewal is only available 60 days prior to expiration of the previous certificate and 30 days after the 
-        // expiration of the previous certificate. 
-
-        fakeClient.EnrollmentNotBefore = enrollmentNotBefore;
-        fakeClient.EnrollmentNotAfter = enrollmentNotAfter;
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
 
@@ -363,10 +363,6 @@ public class GoDaddyCAPluginTests
             Client = fakeClient
         };
         plugin.Initialize(configProvider, certificateDataReader);
-
-        // CSR
-        string subject = "CN=Test Subject";
-        string csrString = GenerateCSR(subject);
 
         Dictionary<string, string[]> sans = new();
         
@@ -394,7 +390,7 @@ public class GoDaddyCAPluginTests
                 { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
                 { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
                 { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
-                { "PriorCertSN", fakeCertificate.SerialNumber }
+                { "PriorCertSN", FakeRenewalCertificate.SerialNumber }
             }
         };
 
@@ -404,12 +400,12 @@ public class GoDaddyCAPluginTests
         EnrollmentType type = EnrollmentType.Renew;
 
         // Act
-        EnrollmentResult result = plugin.Enroll(csrString, subject, sans, productInfo, format, type).Result;
+        EnrollmentResult result = await plugin.Enroll(TestCsr, TestSubject, sans, productInfo, format, type);
         
         // Assert
-        Assert.Equal(result.Status, (int)EndEntityStatus.GENERATED);
-        Assert.Equal(result.StatusMessage, $"Certificate with ID {fakeCaRequestId} has been renewed");
-        Assert.Equal(result.CARequestID, fakeCaRequestId);
+        Assert.Equal((int)EndEntityStatus.GENERATED, result.Status);
+        Assert.Equal($"Certificate with ID {fakeCaRequestId} has been renewed", result.StatusMessage);
+        Assert.Equal(fakeCaRequestId, result.CARequestID);
     }
 
     [Theory]
@@ -423,12 +419,12 @@ public class GoDaddyCAPluginTests
     [InlineData("UCC_DV_SSL")]
     [InlineData("UCC_EV_SSL")]
     [InlineData("UCC_OV_SSL")]
-    public void GoDaddyCAPlugin_Reissue_ReturnSuccess(string productID)
+    public async Task GoDaddyCAPlugin_Reissue_ReturnSuccess(string productID)
     {
         // Arrange
-        DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-100);
-        DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(365);
-        X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
+        // DateTime enrollmentNotBefore = DateTime.UtcNow.AddDays(-100);
+        // DateTime enrollmentNotAfter = DateTime.UtcNow.AddDays(365);
+        // X509Certificate2 fakeCertificate = FakeGoDaddyClient.GenerateSelfSignedCertificate(RSA.Create(2048), "CN=Test Cert", enrollmentNotBefore, enrollmentNotAfter);
         string fakeCaRequestId = Guid.NewGuid().ToString();
         
         FakeGoDaddyClient fakeClient = new FakeGoDaddyClient()
@@ -438,19 +434,13 @@ public class GoDaddyCAPluginTests
                 { fakeCaRequestId, new AnyCAPluginCertificate
                     {
                         CARequestID = fakeCaRequestId,
-                        Certificate = fakeCertificate.ExportCertificatePem(),
+                        Certificate = FakeReissueCertificate.ExportCertificatePem(),
                         Status = 123,
                         ProductID = productID,
                     }
                 }
             }
         };
-
-        // Renewal is only available 60 days prior to expiration of the previous certificate and 30 days after the 
-        // expiration of the previous certificate. 
-
-        fakeClient.EnrollmentNotBefore = enrollmentNotBefore;
-        fakeClient.EnrollmentNotAfter = enrollmentNotAfter;
 
         BlockingCollection<AnyCAPluginCertificate> certificates = new BlockingCollection<AnyCAPluginCertificate>();
 
@@ -462,10 +452,6 @@ public class GoDaddyCAPluginTests
             Client = fakeClient
         };
         plugin.Initialize(configProvider, certificateDataReader);
-
-        // CSR
-        string subject = "CN=Test Subject";
-        string csrString = GenerateCSR(subject);
 
         Dictionary<string, string[]> sans = new();
         
@@ -493,7 +479,7 @@ public class GoDaddyCAPluginTests
                 { EnrollmentConfigConstants.JobTitle, "Software Engineer" },
                 { EnrollmentConfigConstants.RegistrationAgent, "Agent" },
                 { EnrollmentConfigConstants.RegistrationNumber, "REG-12345" },
-                { "PriorCertSN", fakeCertificate.SerialNumber }
+                { "PriorCertSN", FakeReissueCertificate.SerialNumber }
             }
         };
 
@@ -503,12 +489,12 @@ public class GoDaddyCAPluginTests
         EnrollmentType type = EnrollmentType.Renew;
 
         // Act
-        EnrollmentResult result = plugin.Enroll(csrString, subject, sans, productInfo, format, type).Result;
+        EnrollmentResult result = await plugin.Enroll(TestCsr, TestSubject, sans, productInfo, format, type);
         
         // Assert
-        Assert.Equal(result.Status, (int)EndEntityStatus.GENERATED);
-        Assert.Equal(result.StatusMessage, $"Certificate with ID {fakeCaRequestId} has been reissued");
-        Assert.Equal(result.CARequestID, fakeCaRequestId);
+        Assert.Equal((int)EndEntityStatus.GENERATED, result.Status);
+        Assert.Equal($"Certificate with ID {fakeCaRequestId} has been reissued", result.StatusMessage);
+        Assert.Equal(fakeCaRequestId, result.CARequestID);
     }
 
     [IntegrationTestingFact]
